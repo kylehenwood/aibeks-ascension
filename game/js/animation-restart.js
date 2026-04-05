@@ -29,9 +29,12 @@ function restartAnimation() {
     camera.y = val.value;
 
     if (val.complete === true) {
-      camera.x = 0;
       clearVariables();
       gameSetup();
+      // Center camera on first star immediately so the level is positioned correctly during stage 2
+      var firstStar = starHooks[0];
+      camera.x = (firstStar.posX - (canvas.width/2) + (firstStar.size/2)) * -1;
+      camera.vx = 0;
       restartStage = 2;
     }
   }
