@@ -9,7 +9,7 @@ function updateGame() {
   if (starHooks.length > 0) {
     var lastStarX = starHooks[starHooks.length - 1].posX;
     var cameraRight = -camera.x + canvas.width;
-    if (cameraRight > lastStarX - canvas.width) {
+    if (gameState === 'playGame' && cameraRight > lastStarX - canvas.width * 2) {
       generateMoreStars();
     }
   }
@@ -52,6 +52,11 @@ function updateGame() {
   }
   if (character.swinging === false){
     characterFalling(gameContext);
+  }
+
+  // Sparkle particles (render even when rope inactive so they fade out)
+  if (physics.sparkles.length > 0 && !character.swinging) {
+    physicsUpdateSparkles(dt, gameContext);
   }
 
   // launch grappel from character to hook

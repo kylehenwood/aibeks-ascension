@@ -1,7 +1,10 @@
 function setupGameOverAnimation() {
   gameState = 'animateGameOver';
   animateGameOver.state = 1;
-  camera.target = null; // manual control — so updateCamera() doesn't override vx
+  // Scale bob to character speed, capped at 100px
+  var speed = Math.sqrt(physics.vx * physics.vx + physics.vy * physics.vy);
+  animateGameOver.bobAmount = Math.min(speed * 8, 100);
+  camera.target = null;
   soundFalling();
   updateGameOver();
 }
@@ -11,14 +14,14 @@ function setupGameOverAnimation() {
 var animateGameOver = {
   state: 1,
   overlayAlpha: 0,
-  amount: null
+  amount: null,
+  bobAmount: 100
 }
 
 function updateGameOverAnimation() {
 
   // Decelerate horizontal scroll to 0
-  camera.vx *= 0.95;
-  camera.scrollX += camera.vx * dt;
+  camera.vx *= 0.99;
 
   //::state 1
   // Camera move up X amount
@@ -26,7 +29,7 @@ function updateGameOverAnimation() {
 
     var anim = {
       from: camera.y,
-      to: camera.y-200,
+      to: camera.y - animateGameOver.bobAmount,
       duration: 16,
       easing: 'easeOutQuad'
     }
@@ -47,7 +50,7 @@ function updateGameOverAnimation() {
   if (animateGameOver.state === 2) {
       var anim = {
         from: camera.y,
-        to: camera.y+200,
+        to: camera.y + animateGameOver.bobAmount,
         duration: 32,
         easing: 'easeOutQuad'
       }
@@ -64,6 +67,8 @@ function updateGameOverAnimation() {
 
   //::state 3
   if (animateGameOver.state === 3) {
+    camera.vx = 0;
+    camera.vy = 0;
     gameState = 'gameOver';
     animateGameOver.state = 1;
     return;

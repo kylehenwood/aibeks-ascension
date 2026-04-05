@@ -28,6 +28,18 @@ function drawForeground(context,isAnimating) {
   var x2 = camera.vx * dt * 1.2;
   var x3 = camera.vx * dt * 1.4;
 
+  // Mouse parallax draw offsets for clouds (menu only)
+  var mouseOffX1 = 0, mouseOffX2 = 0, mouseOffX3 = 0;
+  var mouseOffY1 = 0, mouseOffY2 = 0, mouseOffY3 = 0;
+  if (gameState === 'gameMenu' && typeof menuMouse !== 'undefined') {
+    mouseOffX1 = menuMouse.x * -20;
+    mouseOffX2 = menuMouse.x * -28;
+    mouseOffX3 = menuMouse.x * -36;
+    mouseOffY1 = menuMouse.y * -10;
+    mouseOffY2 = menuMouse.y * -14;
+    mouseOffY3 = menuMouse.y * -18;
+  }
+
   // always drift horizontally
   if (isAnimating === true) {
     x1 -= 0.1*dt;
@@ -36,19 +48,19 @@ function drawForeground(context,isAnimating) {
   }
 
   var backgroundCloudY = (canvas.height-200)+y1;
-  cloudMove(context,backgroundClouds[0],backgroundClouds[1],x1,backgroundCloudY);
+  cloudMove(context,backgroundClouds[0],backgroundClouds[1],x1,backgroundCloudY,mouseOffX1,mouseOffY1);
 
   var smallCloudY = (canvas.height-200)+y2;
-  cloudMove(context,smallClouds[0],smallClouds[1],x2,smallCloudY);
+  cloudMove(context,smallClouds[0],smallClouds[1],x2,smallCloudY,mouseOffX2,mouseOffY2);
 
   var tinyCloudY = (canvas.height-200)+y3;
-  cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY);
+  cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY,mouseOffX3,mouseOffY3);
 }
 
 
 // move the two cloud layers and position so they do not overlap or distance from each other
 // at any point
-function cloudMove(context,cloudLayer,cloudOther,posX,posY) {
+function cloudMove(context,cloudLayer,cloudOther,posX,posY,drawOffX,drawOffY) {
   cloudLayer.posX += posX;
   cloudOther.posX += posX;
 
@@ -64,8 +76,10 @@ function cloudMove(context,cloudLayer,cloudOther,posX,posY) {
   if (cloudOther.posX > canvas.width) {
     cloudOther.posX = cloudLayer.posX-canvas.width;
   }
-  context.drawImage(cloudLayer.canvas,cloudLayer.posX,posY);
-  context.drawImage(cloudOther.canvas,cloudOther.posX,posY);
+  var ox = drawOffX || 0;
+  var oy = drawOffY || 0;
+  context.drawImage(cloudLayer.canvas,cloudLayer.posX+ox,posY+oy);
+  context.drawImage(cloudOther.canvas,cloudOther.posX+ox,posY+oy);
 }
 
 

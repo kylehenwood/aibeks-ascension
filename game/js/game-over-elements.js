@@ -28,7 +28,7 @@ function createRestartButton(data){
 
   // button text
   restartButton.context.fillStyle = 'black';
-  restartButton.context.font = 'bold 18px lato';
+  restartButton.context.font = 'bold 18px sans-serif';
   restartButton.context.textBaseline="middle";
   restartButton.context.textAlign="center";
   restartButton.context.fillText('Restart Game', restartButton.width/2, restartButton.height/2);
@@ -66,7 +66,7 @@ function createIntroButton(){
 
   // button text
   introButton.context.fillStyle = 'black';
-  introButton.context.font = 'bold 18px lato';
+  introButton.context.font = 'bold 18px sans-serif';
   introButton.context.textBaseline="middle";
   introButton.context.textAlign="center";
   introButton.context.fillText('Back to Menu', introButton.width/2, introButton.height/2);

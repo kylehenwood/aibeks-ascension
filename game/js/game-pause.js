@@ -52,7 +52,7 @@ function drawPauseState() {
 
   // sidebar current score
   pauseCanvas.context.fillStyle = 'white';
-  pauseCanvas.context.font = '24px lato';
+  pauseCanvas.context.font = '24px sans-serif';
   pauseCanvas.context.textBaseline="top";
   pauseCanvas.context.textAlign="left";
   pauseCanvas.context.fillText('SCORE: '+gameUserInterface.score, 24, 24);
@@ -64,7 +64,7 @@ function drawPauseState() {
 
   // paused message
   pauseCanvas.context.fillStyle = 'white';
-  pauseCanvas.context.font = '24px lato';
+  pauseCanvas.context.font = '24px sans-serif';
   pauseCanvas.context.textBaseline="middle";
   pauseCanvas.context.textAlign="center";
   pauseCanvas.context.fillText('PAUSED (shortcut P)', canvas.width/2+(320/2), canvas.height/2);
@@ -90,7 +90,7 @@ function resumeGame() {
 
       // coundown text
       pauseCanvas.context.fillStyle = 'white';
-      pauseCanvas.context.font = '48px lato';
+      pauseCanvas.context.font = '48px sans-serif';
       pauseCanvas.context.textAlign="center";
       pauseCanvas.context.fillText(resumeCountdown, canvas.width/2, canvas.height/2);
       resumeCountdown -= 1;

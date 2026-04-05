@@ -10,7 +10,6 @@ var menuElems = [];
 
 function setupMenu() {
   gameState = 'gameMenu';
-  character.centerY = 368;
   character.centerX = canvas.width/2;
 }
 
@@ -22,22 +21,17 @@ function createMenu() {
   gameMenu.context = gameMenu.canvas.getContext('2d');
 
   // intro elements
-  // - theme button
-  // - settings button
-  // - sound button
-  // - play button
-  // width, height, posX, posY, action, style
   createPlayButton(playButton);
   menuElems.push(playButton);
 
-  createSettingsButton(settingsButton);
-  menuElems.push(settingsButton);
+  // createSettingsButton(settingsButton);
+  // menuElems.push(settingsButton);
 
-  createSoundButton(soundButton);
-  menuElems.push(soundButton);
+  // createSoundButton(soundButton);
+  // menuElems.push(soundButton);
 
-  createThemeButton(themeButton);
-  menuElems.push(themeButton);
+  // createThemeButton(themeButton);
+  // menuElems.push(themeButton);
 
   createLogo();
   createPlatform();
@@ -50,39 +44,52 @@ function updateMenu() {
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  // overlay
-  // context.beginPath();
-  // context.rect(0,0,canvas.width,canvas.height)
-  // context.fillStyle = 'rgba(255,000,000,0.1)';
-  // context.fill();
-  // context.closePath();
-
-  //var context = gameMenu.context;
-
   // hover animation
-  // if (platform.hoverDirection === 'up' && platform.hover <= 0) {
-  //   platform.hoverDirection = 'down';
-  // }
-  // if (platform.hoverDirection === 'down' && platform.hover >= 5) {
-  //   platform.hoverDirection = 'up';
-  // }
-  // if (platform.hoverDirection === 'up') {
-  //   platform.hover -= 0.024;
-  // } else {
-  //   platform.hover += 0.024;
-  // }
+  if (platform.hoverDirection === 'up' && platform.hover <= 0) {
+    platform.hoverDirection = 'down';
+  }
+  if (platform.hoverDirection === 'down' && platform.hover >= 5) {
+    platform.hoverDirection = 'up';
+  }
+  if (platform.hoverDirection === 'up') {
+    platform.hover -= 0.024 * dt;
+  } else {
+    platform.hover += 0.024 * dt;
+  }
+
+  platform.time += 0.016 * dt;
+  var hoverY = platform.posY + platform.hover;
+
+  // Position character on the platform surface
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = hoverY + 26 - character.size / 2;
+
+  // title (behind platform)
+  context.drawImage(logo.canvas, logo.posX, logo.posY);
+
+  // floating rocks (bob independently)
+  for (var i = 0; i < floatingRocks.length; i++) {
+    var rock = floatingRocks[i];
+    var rockBob = Math.sin(platform.time * rock.speed + rock.phase) * 4;
+    drawFloatingRock(context, platform.posX + rock.x, hoverY + rock.y + rockBob, rock.size);
+  }
 
   // floating platform
-  context.drawImage(platform.canvas,platform.posX,platform.posY)
+  context.drawImage(platform.canvas, platform.posX, hoverY);
 
-  // title
-  context.drawImage(logo.canvas,logo.posX,logo.posY);
+  // animated campfire flames
+  var fireCx = platform.posX + platform.width * 0.2;
+  var fireBaseY = hoverY + 28;
+  drawCampfireFlames(context, fireCx, fireBaseY, platform.time, 1.6);
 
-  // intro buttons
-  context.drawImage(themeButton.canvas,themeButton.posX,themeButton.posY);
-  context.drawImage(soundButton.canvas,soundButton.posX,soundButton.posY);
-  context.drawImage(settingsButton.canvas,settingsButton.posX,settingsButton.posY);
+  // Draw character on platform (same size as gameplay)
+  drawCharacter(context);
+
+  // intro buttons (disabled for now)
+  // context.drawImage(themeButton.canvas, themeButton.posX, themeButton.posY);
+  // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
+  // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
 
   // play button
-  context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
+  context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
 }

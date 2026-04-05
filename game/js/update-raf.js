@@ -56,12 +56,17 @@ function runGame(timestamp) {
 
     case 'menuAnimation':
     // Update
+    menuDrawState.active = false;
     animateToMenu();
-    drawForeground(canvas.context,true);
     // Draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
+    // Only draw game panel during first half (old level exiting)
+    if (menuPanProgress < 0.5 && menuStage === 1) {
+      canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
+    }
     drawCharacter(canvas.context);
+    drawForeground(canvas.context,true);
+    drawMenuFront();
     drawGameOverlay(canvas.context,'fade-out');
     break;
 
@@ -71,9 +76,6 @@ function runGame(timestamp) {
     updateMenu();
     //Draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
-    drawCharacter(canvas.context);
     drawForeground(canvas.context,true);
     canvas.context.drawImage(gameMenu.canvas,0,0);
     break;
@@ -118,10 +120,15 @@ function runGame(timestamp) {
     updateStart();
     //draw
     drawBackground();
-    drawCharacter(gamePanel.context);
+    // Draw game panel (stars) with fade, but NOT the character
+    canvas.context.save();
+    canvas.context.globalAlpha = hookAlpha;
     canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
     canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    canvas.context.restore();
     drawForeground(canvas.context,true);
+    // Draw character on top at full opacity
+    drawCharacter(canvas.context);
     break;
 
 
