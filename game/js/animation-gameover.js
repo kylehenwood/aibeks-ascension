@@ -19,48 +19,40 @@ function updateGameOverAnimation() {
   // Camera move up X amount
   if (animateGameOver.state === 1) {
 
-    // animation parameters
     var anim = {
-      from: cameraY,
-      to: cameraY-200,
+      from: camera.y,
+      to: camera.y-200,
       duration: 16,
       easing: 'easeOutQuad'
     }
 
-    // get new value
     val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
 
-    // updated animated value
-    cameraY = val.value;
+    camera.vy = val.value - camera.y;
+    camera.y = val.value;
 
-    // if animation finished
     if (val.complete === true) {
-      console.log('done');
       animateGameOver.state = 2;
     }
   }
 
 
   //::state 2
-  // Camera mode down + slow;
+  // Camera move down + slow
   if (animateGameOver.state === 2) {
-      // animation parameters
       var anim = {
-        from: cameraY,
-        to: cameraY+200,
+        from: camera.y,
+        to: camera.y+200,
         duration: 32,
         easing: 'easeOutQuad'
       }
 
-      // get new value
       val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
 
-      // updated animated value
-      cameraY = val.value;
+      camera.vy = val.value - camera.y;
+      camera.y = val.value;
 
-      // if animation finished
       if (val.complete === true) {
-        console.log('done');
         animateGameOver.state = 3;
       }
   }
@@ -71,8 +63,4 @@ function updateGameOverAnimation() {
     animateGameOver.state = 1;
     return;
   }
-
-
-  //console.log(cameraY);
-
 }

@@ -78,34 +78,35 @@ function setupBackgroundStars() {
   starLayers = [];
   setupTwinkleStars();
 
-  starLayers.push({canvas: createStarPanel(0.1,1),  posZ: 0.3});
-  starLayers.push({canvas: createStarPanel(0.01,2), posZ: 0.6});
-  starLayers.push({canvas: createStarPanel(0.025,3),posZ: 1});
+  // posZ = parallax depth. 0 = fixed, 1 = moves with camera exactly
+  // Lower = further away (barely moves), higher = closer (rushes past)
+  starLayers.push({canvas: createStarPanel(0.12, 1), posZ: 0.05});  // very distant tiny stars
+  starLayers.push({canvas: createStarPanel(0.06, 1), posZ: 0.15});  // distant stars
+  starLayers.push({canvas: createStarPanel(0.02, 2), posZ: 0.3});   // mid stars
+  starLayers.push({canvas: createStarPanel(0.01, 2), posZ: 0.5});   // near stars
+  starLayers.push({canvas: createStarPanel(0.005,3), posZ: 0.7});   // close bright stars
 }
 
 
 
 // Called by RAF
 function drawBackgroundStars() {
-  var cameraReducer = 0.2;
   var w = canvas.width;
   var h = canvas.height;
 
   starLayers.forEach(function(layer) {
-    // Derive position from absolute camera state — no accumulation, no snap
-    var offsetX = (moveCanvas.currentPos * cameraReducer) * layer.posZ;
-    var offsetY = (cameraY * cameraReducer) * layer.posZ;
+    var offsetX = camera.scrollX * layer.posZ;
+    var offsetY = camera.y * layer.posZ;
 
     // Wrap to a single tile offset using modulo
     var tileX = ((offsetX % w) + w) % w;
     var tileY = ((offsetY % h) + h) % h;
 
-    // Draw a 2x2 grid of tiles to cover the viewport seamlessly
+    // Draw tiles to cover the viewport seamlessly
     for (var tx = -1; tx <= 1; tx++) {
       for (var ty = -1; ty <= 1; ty++) {
         var drawX = tileX + tx * w;
         var drawY = tileY + ty * h;
-        // Only draw if tile overlaps viewport
         if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
           canvas.context.drawImage(layer.canvas, drawX, drawY);
         }
@@ -113,10 +114,10 @@ function drawBackgroundStars() {
     }
   });
 
-  // twinkle overlay — also derived from absolute camera position
+  // twinkle overlay — sits on the distant layer
   var time = Date.now() / 1000;
-  var twinkleOffsetX = (moveCanvas.currentPos * cameraReducer) * 0.3;
-  var twinkleOffsetY = (cameraY * cameraReducer) * 0.3;
+  var twinkleOffsetX = camera.scrollX * 0.1;
+  var twinkleOffsetY = camera.y * 0.1;
 
   twinkleStars.forEach(function(star) {
     var alpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));

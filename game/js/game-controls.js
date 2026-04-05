@@ -59,7 +59,7 @@ function playClick(mouseX,mouseY) {
 
     elements.forEach(function(element) {
       if (mouseY > element.posY && mouseY < element.posY+element.size
-        && mouseX > element.posX+moveCanvas.currentPos && mouseX < element.posX+moveCanvas.currentPos+element.size) {
+        && mouseX > element.posX+camera.x && mouseX < element.posX+camera.x+element.size) {
         clickedSomething = true;
         changeHook(element.index);
       }
@@ -142,7 +142,7 @@ function drawClicky() {
   clickAreas.context = clickContext;
 
   elements.forEach(function(element) {
-    //element.posX+moveCanvas.currentPos;
+    //element.posX+camera.x;
     clickContext.fillStyle = 'rgba(0,255,0,0.1)';
     clickContext.fillRect(element.posX, element.posY, element.size, element.size);
   });

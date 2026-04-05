@@ -16,26 +16,24 @@ function setupForeground() {
 
 // HOW TO MAKE THE CLOUDS ENDLESS???
 
-function drawForeground(context,cameraX,cameraY,isAnimating) {
-  // draw clouds at the bottom of screen.
+function drawForeground(context,isAnimating) {
 
-  //console.log('foreground animate')
+  // Cloud parallax: multipliers > 1 so clouds rush past faster than the game layer
+  // This creates the "overtake" effect when the camera pans down on restart
+  var y1 = camera.y * 1.2;
+  var y2 = camera.y * 1.5;
+  var y3 = camera.y * 1.8;
 
-  var y3 = cameraY*1.4;
-  var y2 = cameraY*1.2;
-  var y1 = cameraY;
+  var x1 = camera.vx * dt;
+  var x2 = camera.vx * dt * 1.2;
+  var x3 = camera.vx * dt * 1.4;
 
-  var x3 = cameraX*1.4;
-  var x2 = cameraX*1.2;
-  var x1 = cameraX;
-
+  // always drift horizontally
   if (isAnimating === true) {
     x1 -= 0.1*dt;
     x2 -= 0.2*dt;
     x3 -= 0.3*dt;
   }
-
-  // make the clouds move even when stationary
 
   var backgroundCloudY = (canvas.height-200)+y1;
   cloudMove(context,backgroundClouds[0],backgroundClouds[1],x1,backgroundCloudY);

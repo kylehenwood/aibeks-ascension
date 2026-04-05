@@ -41,9 +41,9 @@ function updateStart() {
     if (startMove < cloudUp-2) {
       var progress = animateEaseOut(cloudUp,startMove,12);
       startMove += progress*dt;
-      //moveCanvas.moveSpeed = -progress;
-      moveCanvas.currentPos += moveCanvas.moveSpeed*dt;
-      platform.posX+=moveCanvas.moveSpeed*dt;
+      //camera.vx = -progress;
+      camera.x += camera.vx*dt;
+      platform.posX+=camera.vx*dt;
     } else {
       start.state = 2;
       startMove = 0;
@@ -83,7 +83,7 @@ function updateStart() {
 
     //context.save();
     //context.globalAlpha = (start.logoAlpha/100);
-    context.drawImage(logo.canvas,logo.posX+=moveCanvas.moveSpeed*0.4,logo.posY);
+    context.drawImage(logo.canvas,logo.posX+=camera.vx*0.4,logo.posY);
     //context.restore();
   }
 

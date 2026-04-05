@@ -14,11 +14,13 @@ function backToMenu() {
   // set character position
   character.centerY = -100;
   character.centerX = canvas.width/2;
+  menuGravity = 0;
 }
 
 // end game
 var menuStage = 1;
 var menuAlpha = 0;
+var menuGravity = 0;
 
 // gameState === 'restartAnimation'
 // once complete it starts a new game.
@@ -30,28 +32,24 @@ function animateToMenu() {
   // ::Stage 1
   // push out current game state.
   if (menuStage === 1) {
+    camera.target = null;
 
     var anim = {
-      from: cameraY,  // this gets constantly updated when animating... it shouldnt?
+      from: camera.y,
       to: -canvas.height*5,
       duration: 100,
       easing: 'easeInQuad'
     }
 
-    // get new value
     val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
 
-    // updated animated value
-    cameraY = val.value;
+    camera.vy = val.value - camera.y;
+    camera.y = val.value;
 
-    // if animation finished
     if (val.complete === true) {
-
-      // start new game
-      moveCanvas.currentPos = 0;
+      camera.x = 0;
       clearVariables();
       gameSetup();
-      //--
       menuStage = 2;
     }
   }
@@ -67,11 +65,10 @@ function animateToMenu() {
       easing: 'easeOutQuad'
     }
 
-    // get new value
     val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
 
-    // updated animated value
-    cameraY = val.value;
+    camera.vy = val.value - camera.y;
+    camera.y = val.value;
 
     // if animation finished
     if (val.complete === true) {
@@ -89,13 +86,13 @@ function animateToMenu() {
     var context = canvas.context;
 
     // floating platform
-    context.drawImage(platform.canvas,platform.posX,platform.posY+cameraY*0.6)
+    context.drawImage(platform.canvas,platform.posX,platform.posY+camera.y*0.6)
 
     context.save();
     context.globalAlpha = logo.alpha;
 
     // game logo
-    context.drawImage(logo.canvas, logo.posX, logo.posY+cameraY*0.2);
+    context.drawImage(logo.canvas, logo.posX, logo.posY+camera.y*0.2);
     // intro buttons
     context.drawImage(themeButton.canvas,themeButton.posX,themeButton.posY);
     context.drawImage(soundButton.canvas,soundButton.posX,soundButton.posY);
@@ -125,22 +122,8 @@ function animateToMenu() {
       playButton.alpha = 1;
     }
 
-
-    // Character fall
-    soundFalling();
-    if (character.centerY < 368) {
-      if (gravity < terminalVelocity) {
-        gravity += gravityIncrease;
-      } else {
-        gravity = terminalVelocity;
-      }
-      character.centerY += gravity;
-
-      if (character.centerY > 368) {
-        character.centerY = 368;
-      }
-    }
-
+    // hide square character - wizard is drawn on the platform canvas
+    character.centerY = -200;
 
     var context = canvas.context;
     // play button
@@ -155,7 +138,7 @@ function animateToMenu() {
     context.drawImage(settingsButton.canvas,settingsButton.posX,settingsButton.posY);
 
     // end
-    if (playButton.alpha >= 1 && playButton.progress >= 100 && character.centerY >= 368) {
+    if (playButton.alpha >= 1 && playButton.progress >= 100) {
       setPlayButton();
       menuStage = 0;
       logo.alpha = 0;

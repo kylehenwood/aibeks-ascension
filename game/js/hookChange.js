@@ -20,7 +20,7 @@ function changeHook(hookIndex) {
 
     // set global variables
     selectedHook = scoutHook;
-    cameraMode = 'hook';
+    cameraFollowHook();
     selectedHook.selected = true;
     hookGrappel.launch = true;
     soundGrappelLaunch();

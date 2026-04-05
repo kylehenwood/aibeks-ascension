@@ -19,7 +19,8 @@ function setupIntro() {
   playButton.alpha = 0;
   menuAlpha = 0;
   intro.val = 0;
-  cameraY = 25;
+  camera.y = 25;
+  camera.target = null;
 }
 
 function createIntro() {}
@@ -31,13 +32,15 @@ function updateIntro() {
   character.centerX = canvas.width/2;
   character.centerY = canvas.height/2;
 
-  if (cameraY > 0) {
-    cameraY -= 0.5;
+  if (camera.y > 0) {
+    camera.vy = -0.5;
+    camera.y += camera.vy * dt;
   }
 
 
   if (intro.val >= 50) {
-    cameraY = 0;
+    camera.y = 0;
+    camera.vy = 0;
     backToMenu();
   }
 
