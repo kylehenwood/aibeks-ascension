@@ -28,7 +28,7 @@ function drawBackground() {
 // aruroa?
 
 var starLayers = [];
-var backgroundCameraY = 0;
+var twinkleStars = [];
 
 function createStarPanel(density,size) {
   var panel = document.createElement('canvas');
@@ -57,73 +57,80 @@ function createStarPanel(density,size) {
 }
 
 
+function setupTwinkleStars() {
+  twinkleStars = [];
+  var count = Math.floor((canvas.width * canvas.height) / (40 * 40) * 0.08);
+  for (var i = 0; i < count; i++) {
+    twinkleStars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: 1 + Math.random() * 2,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 1.5
+    });
+  }
+}
+
 function setupBackgroundStars() {
 
-  // DENSITY, SIZE
+  // DENSITY, SIZE, DEPTH
+  // Each layer stores one panel texture and a parallax depth factor
+  starLayers = [];
+  setupTwinkleStars();
 
-  var starPanel0 = createStarPanel(0.1,1);
-  starLayers.push({canvas:starPanel0,posZ:0.3,posX:0,posY:0});
-  starLayers.push({canvas:starPanel0,posZ:0.3,posX:0,posY:canvas.height});
-  starLayers.push({canvas:starPanel0,posZ:0.3,posX:canvas.width,posY:0});
-  starLayers.push({canvas:starPanel0,posZ:0.3,posX:canvas.width,posY:canvas.height});
-
-  var starPanel1 = createStarPanel(0.01,2);
-  starLayers.push({canvas:starPanel1,posZ:0.6,posX:0,posY:0});
-  starLayers.push({canvas:starPanel1,posZ:0.6,posX:0,posY:canvas.height});
-  starLayers.push({canvas:starPanel1,posZ:0.6,posX:canvas.width,posY:0});
-  starLayers.push({canvas:starPanel1,posZ:0.6,posX:canvas.width,posY:canvas.height});
-
-  var starPanel2 = createStarPanel(0.025,3);
-  starLayers.push({canvas:starPanel2,posZ:1,posX:0,posY:0});
-  starLayers.push({canvas:starPanel2,posZ:1,posX:0,posY:canvas.height});
-  starLayers.push({canvas:starPanel2,posZ:1,posX:canvas.width,posY:0});
-  starLayers.push({canvas:starPanel2,posZ:1,posX:canvas.width,posY:canvas.height});
-
-  // var starPanel3 = createStarPanel(0.05,3);
-  // starLayers.push({canvas:starPanel3,posZ:1.4,posX:0,posY:0});
-  // starLayers.push({canvas:starPanel3,posZ:1.4,posX:0,posY:canvas.height});
-  // starLayers.push({canvas:starPanel3,posZ:1.4,posX:canvas.width,posY:0});
-  // starLayers.push({canvas:starPanel3,posZ:1.4,posX:canvas.width,posY:canvas.height});
-
+  starLayers.push({canvas: createStarPanel(0.1,1),  posZ: 0.3});
+  starLayers.push({canvas: createStarPanel(0.01,2), posZ: 0.6});
+  starLayers.push({canvas: createStarPanel(0.025,3),posZ: 1});
 }
 
 
 
 // Called by RAF
 function drawBackgroundStars() {
-  starLayers.forEach(function(starPanel) {
+  var cameraReducer = 0.2;
+  var w = canvas.width;
+  var h = canvas.height;
 
-    // organic move
-    //starPanel.posX -= 0.05*starPanel.posZ;
-    //console.log(starCameraY);
+  starLayers.forEach(function(layer) {
+    // Derive position from absolute camera state — no accumulation, no snap
+    var offsetX = (moveCanvas.currentPos * cameraReducer) * layer.posZ;
+    var offsetY = (cameraY * cameraReducer) * layer.posZ;
 
-    backgroundCameraY = cameraY;
+    // Wrap to a single tile offset using modulo
+    var tileX = ((offsetX % w) + w) % w;
+    var tileY = ((offsetY % h) + h) % h;
 
-    //console.log(starCameraMoveY);
-
-    // camera move
-    var cameraReducer = 0.4;
-
-    starPanel.posX += (moveCanvas.moveSpeed*cameraReducer)*starPanel.posZ;
-    starPanel.posY = (backgroundCameraY*cameraReducer)*starPanel.posZ;
-
-    // vertical
-    if (starPanel.posY+canvas.height <= 0) {
-      starPanel.posY = starPanel.posY+(canvas.height*2)
+    // Draw a 2x2 grid of tiles to cover the viewport seamlessly
+    for (var tx = -1; tx <= 1; tx++) {
+      for (var ty = -1; ty <= 1; ty++) {
+        var drawX = tileX + tx * w;
+        var drawY = tileY + ty * h;
+        // Only draw if tile overlaps viewport
+        if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
+          canvas.context.drawImage(layer.canvas, drawX, drawY);
+        }
+      }
     }
-    if (starPanel.posY >= canvas.height) {
-      starPanel.posY = starPanel.posY-(canvas.height*2)
-    }
+  });
 
-    // horizonal
-    if (starPanel.posX+canvas.width <= 0) {
-      starPanel.posX = starPanel.posX+(canvas.width*2)
-    }
-    if (starPanel.posX >= canvas.width) {
-      starPanel.posX = starPanel.posX-(canvas.width*2)
-    }
+  // twinkle overlay — also derived from absolute camera position
+  var time = Date.now() / 1000;
+  var twinkleOffsetX = (moveCanvas.currentPos * cameraReducer) * 0.3;
+  var twinkleOffsetY = (cameraY * cameraReducer) * 0.3;
 
-    // draw
-    canvas.context.drawImage(starPanel.canvas,starPanel.posX,starPanel.posY);
+  twinkleStars.forEach(function(star) {
+    var alpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));
+    var drawX = star.x + twinkleOffsetX;
+    var drawY = star.y + twinkleOffsetY;
+
+    // wrap
+    drawX = ((drawX % w) + w) % w;
+    drawY = ((drawY % h) + h) % h;
+
+    canvas.context.beginPath();
+    canvas.context.arc(drawX, drawY, star.size * (0.8 + 0.2 * Math.sin(time * star.speed + star.phase)), 0, Math.PI * 2, true);
+    canvas.context.closePath();
+    canvas.context.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+    canvas.context.fill();
   });
 }
