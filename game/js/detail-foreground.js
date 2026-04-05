@@ -30,9 +30,9 @@ function drawForeground(context,cameraX,cameraY,isAnimating) {
   var x1 = cameraX;
 
   if (isAnimating === true) {
-    x1 -= 0.1;
-    x2 -= 0.2;
-    x3 -= 0.3;
+    x1 -= 0.1*dt;
+    x2 -= 0.2*dt;
+    x3 -= 0.3*dt;
   }
 
   // make the clouds move even when stationary

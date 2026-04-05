@@ -7,7 +7,7 @@ function drawGameOverlay(context,state) {
   // fade out
   if (state === 'fade-out') {
     if (gameOverlay.alpha > 0) {
-      gameOverlay.alpha -= 0.04;
+      gameOverlay.alpha -= 0.04*dt;
     } else {
       gameOverlay.alpha = 0;
       //return;
@@ -17,7 +17,7 @@ function drawGameOverlay(context,state) {
   // fade in
   if (state === 'fade-in') {
     if (gameOverlay.alpha < gameOverlay.maxAlpha) {
-      gameOverlay.alpha += 0.02;
+      gameOverlay.alpha += 0.02*dt;
     } else {
       gameOverlay.alpha = gameOverlay.maxAlpha;
     }

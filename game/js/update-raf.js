@@ -14,8 +14,19 @@ var cameraY = 0;
 var cameraX = 0;
 
 // requestAnimationFrame function
-function runGame() {
+function runGame(timestamp) {
   requestAnimationFrame(runGame);
+
+  // Calculate delta time normalized to 60fps (dt=1 at 60fps, dt=0.5 at 120fps)
+  if (lastFrameTime === 0) lastFrameTime = timestamp;
+  var elapsed = timestamp - lastFrameTime;
+  lastFrameTime = timestamp;
+  if (elapsed > 0 && elapsed < 200) { // cap to avoid huge jumps on tab switch
+    dt = elapsed / targetFrameMs;
+  } else {
+    dt = 1;
+  }
+
   clear(canvas);
 
   switch(gameState) {
@@ -66,9 +77,9 @@ function runGame() {
     drawCharacter(gamePanel.context);
     canvas.context.drawImage(gamePanel.canvas,moveCanvas.currentPos,cameraY);
     canvas.context.drawImage(clickAreas.canvas,moveCanvas.currentPos,cameraY);
-    drawForeground(canvas.context,moveCanvas.moveSpeed,cameraY,true);
+    drawForeground(canvas.context,moveCanvas.moveSpeed*dt,cameraY,true);
     updateMoonPowerBar();
-    moveCanvas.currentPos += moveCanvas.moveSpeed;
+    moveCanvas.currentPos += moveCanvas.moveSpeed*dt;
     // pause icon
     drawPauseIcon();
 
@@ -125,10 +136,10 @@ function runGame() {
     updateCamera();
     //draw
     drawBackground();
-    moveCanvas.currentPos += moveCanvas.moveSpeed;
+    moveCanvas.currentPos += moveCanvas.moveSpeed*dt;
     canvas.context.drawImage(gamePanel.canvas,moveCanvas.currentPos,cameraY);
     canvas.context.drawImage(clickAreas.canvas,moveCanvas.currentPos,cameraY);
-    drawForeground(canvas.context,moveCanvas.moveSpeed,cameraY,true);
+    drawForeground(canvas.context,moveCanvas.moveSpeed*dt,cameraY,true);
     drawGameOverlay(canvas.context,'fade-in');
     drawCharacter(canvas.context);
     break;

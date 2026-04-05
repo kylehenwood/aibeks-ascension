@@ -4,6 +4,11 @@
 // }
 
 
+// Delta time - normalizes game speed to 60fps regardless of actual refresh rate
+var dt = 1;
+var lastFrameTime = 0;
+var targetFrameMs = 1000 / 60; // 16.67ms per frame at 60fps
+
 var canvas = {
     id: '',
     context: '',
@@ -47,8 +52,8 @@ var gridSize = {
 
 // character
 var gravity = 0;
-var terminalVelocity = 16;
-var gravityIncrease = 0.3;
+var terminalVelocity = 11;
+var gravityIncrease = 0.2;
 var momentiumY;
 var momentiumX;
 var friction;
@@ -80,7 +85,7 @@ var currentAngle; //angle in degrees - also the starting position when you conne
 let momentiumIncrease = 0;
 var momentiumAngle;
 var swingDirection;
-var swingSpeed = 0.1;
+var swingSpeed = 0.07;
 var maxSpeed = 2;
 // !IDEA give momentium boost when character connects to a new hook.
 // draw the rope that connects character to hook

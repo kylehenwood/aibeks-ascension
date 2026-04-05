@@ -30,7 +30,7 @@ function animateNum(from,to,duration,easing){
   }
 
   // increment animation progress from 0 to 1
-  animateNumber.progress += animateNumber.increment;
+  animateNumber.progress += animateNumber.increment*dt;
 
   // check if complete
   if (Math.round(animateNumber.progress) >= 100) {

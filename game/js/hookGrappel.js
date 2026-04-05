@@ -9,7 +9,7 @@ function grappelLaunch(context) {
 
  if (increment < 1) {
    increment = (hookGrappel.currentIteration/hookGrappel.interations);
-   hookGrappel.currentIteration += 1;
+   hookGrappel.currentIteration += 1*dt;
  }
 
  // regular sized triangle

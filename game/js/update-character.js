@@ -73,10 +73,10 @@ function characterFalling(context) {
     return;
   }
   if (gravity < terminalVelocity) {
-    gravity += gravityIncrease;
+    gravity += gravityIncrease*dt;
   } else {
     gravity = terminalVelocity;
   }
-  character.centerY += gravity;
-  character.centerX += momentiumIncrease;
+  character.centerY += gravity*dt;
+  character.centerX += momentiumIncrease*dt;
 }

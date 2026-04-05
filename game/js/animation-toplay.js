@@ -40,10 +40,10 @@ function updateStart() {
   if (start.state === 1){
     if (startMove < cloudUp-2) {
       var progress = animateEaseOut(cloudUp,startMove,12);
-      startMove += progress;
+      startMove += progress*dt;
       //moveCanvas.moveSpeed = -progress;
-      moveCanvas.currentPos += moveCanvas.moveSpeed;
-      platform.posX+=moveCanvas.moveSpeed;
+      moveCanvas.currentPos += moveCanvas.moveSpeed*dt;
+      platform.posX+=moveCanvas.moveSpeed*dt;
     } else {
       start.state = 2;
       startMove = 0;
@@ -60,7 +60,7 @@ function updateStart() {
       start.state = 4;
     }
     var jumpHeight = (logo.posY-character.centerY)/8;
-    character.centerY += jumpHeight;
+    character.centerY += jumpHeight*dt;
   }
 
 
