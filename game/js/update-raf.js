@@ -8,6 +8,7 @@ var camera = {
   vx: 0,           // horizontal velocity
   vy: 0,           // vertical velocity
   scrollX: 0,      // accumulated horizontal scroll for bg parallax (never resets)
+  scrollY: 0,      // accumulated vertical scroll for bg parallax (never resets)
   target: null,    // 'hook' | 'character' | 'position' | null (manual/animation)
   targetX: 0,      // where camera wants to be
   targetY: 0,
@@ -204,4 +205,5 @@ function updateCamera() {
 
   // Always accumulate for background parallax (never resets)
   camera.scrollX += camera.vx * dt;
+  camera.scrollY += camera.vy * dt;
 }

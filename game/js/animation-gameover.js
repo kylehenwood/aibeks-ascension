@@ -1,6 +1,7 @@
 function setupGameOverAnimation() {
   gameState = 'animateGameOver';
   animateGameOver.state = 1;
+  camera.target = null; // manual control — so updateCamera() doesn't override vx
   soundFalling();
   updateGameOver();
 }
@@ -14,6 +15,10 @@ var animateGameOver = {
 }
 
 function updateGameOverAnimation() {
+
+  // Decelerate horizontal scroll to 0
+  camera.vx *= 0.95;
+  camera.scrollX += camera.vx * dt;
 
   //::state 1
   // Camera move up X amount

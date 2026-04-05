@@ -1,7 +1,8 @@
 
+var menuFirstLoad = true;
+
 function backToMenu() {
   gameState = 'menuAnimation';
-  menuStage = 1;
   menuAlpha = 0;
 
   logo.alpha = 0;
@@ -15,12 +16,30 @@ function backToMenu() {
   character.centerY = -100;
   character.centerX = canvas.width/2;
   menuGravity = 0;
+
+  if (menuFirstLoad) {
+    // First time — slowly pan down to reveal platform and menu
+    menuFirstLoad = false;
+    camera.target = null;
+    camera.y = canvas.height;
+    camera.vy = 0;
+    gameSetup();
+    menuStage = 2;
+  } else {
+    // Returning from gameplay — pan down like restart, transition into menu
+    camera.target = null;
+    menuPanProgress = 0;
+    menuPanReset = false;
+    menuStage = 1;
+  }
 }
 
 // end game
 var menuStage = 1;
 var menuAlpha = 0;
 var menuGravity = 0;
+var menuPanProgress = 0;
+var menuPanReset = false;
 
 // gameState === 'restartAnimation'
 // once complete it starts a new game.
@@ -29,50 +48,71 @@ function animateToMenu() {
   // set character to center of the screen;
   character.centerX = canvas.width/2;
 
-  // ::Stage 1
-  // push out current game state.
+  // ::Stage 1 — pan down: old level exits up, menu enters from below
   if (menuStage === 1) {
-    camera.target = null;
+    var duration = 180;
+    var panDistance = canvas.height * 2;
 
-    var anim = {
-      from: camera.y,
-      to: -canvas.height*5,
-      duration: 100,
-      easing: 'easeInQuad'
+    menuPanProgress += (1 / duration) * dt;
+    if (menuPanProgress > 1) menuPanProgress = 1;
+
+    // Sine-based speed: slow → fast → slow
+    var panSpeed = Math.sin(menuPanProgress * Math.PI) * 18;
+    camera.vy = -panSpeed;
+    camera.scrollY += camera.vy * dt;
+
+    // Game panel position: fake the transition
+    if (menuPanProgress < 0.5) {
+      // Old level slides up and out
+      var t = menuPanProgress * 2;
+      var ease = t * t * t;
+      camera.y = -ease * panDistance;
+    } else {
+      // Menu enters from below
+      var t = (menuPanProgress - 0.5) * 2;
+      var ease = 1 - (1 - t) * (1 - t) * (1 - t);
+      camera.y = (1 - ease) * panDistance;
     }
 
-    val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
-
-    camera.vy = val.value - camera.y;
-    camera.y = val.value;
-
-    if (val.complete === true) {
-      camera.x = 0;
+    // Reset at the midpoint
+    if (!menuPanReset && menuPanProgress >= 0.45) {
+      menuPanReset = true;
       clearVariables();
       gameSetup();
+      camera.x = 0;
+      camera.y = canvas.height * 3;
+      return;
+    }
+
+    if (menuPanProgress >= 1) {
+      camera.y = 0;
+      camera.vy = 0;
       menuStage = 2;
     }
   }
 
 
-  // ::Stage 2
+  // ::Stage 2 — pan camera to reveal menu (intro) or fade in elements (from game)
   if (menuStage === 2) {
 
-    var anim = {
-      from: canvas.height*1.5,
-      to: 0,
-      duration: 80,
-      easing: 'easeOutQuad'
-    }
+    // If camera.y isn't 0, animate it there (intro pan)
+    if (Math.abs(camera.y) > 1) {
+      var anim = {
+        from: camera.y,
+        to: 0,
+        duration: 180,
+        easing: 'easeInOutCubic'
+      }
 
-    val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
+      val = animateNum(anim.from,anim.to,anim.duration,anim.easing);
 
-    camera.vy = val.value - camera.y;
-    camera.y = val.value;
+      camera.vy = val.value - camera.y;
+      camera.y = val.value;
 
-    // if animation finished
-    if (val.complete === true) {
-      menuStage = 3;
+      if (val.complete === true) {
+        camera.y = 0;
+        camera.vy = 0;
+      }
     }
 
     // fade in title
@@ -100,8 +140,9 @@ function animateToMenu() {
 
     canvas.context.restore();
 
-    // end
-    if (val.complete === true) {
+    // Move to stage 3 once faded in and camera settled
+    if (logo.alpha >= 1 && menuAlpha >= 1 && Math.abs(camera.y) <= 1) {
+      camera.y = 0;
       menuStage = 3;
     }
   }

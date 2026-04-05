@@ -55,6 +55,26 @@ function animateNum(from,to,duration,easing){
       value = animateNumber.amount*animation;
       break;
 
+    case 'easeInCubic':
+      animation = EasingFunctions.easeInCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeOutCubic':
+      animation = EasingFunctions.easeOutCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeInOutCubic':
+      animation = EasingFunctions.easeInOutCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeInOutQuart':
+      animation = EasingFunctions.easeInOutQuart(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
     default:
       animation = EasingFunctions.linear(animateNumber.progress/100);
       value = animateNumber.amount*animation;

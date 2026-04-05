@@ -96,7 +96,7 @@ function drawBackgroundStars() {
 
   starLayers.forEach(function(layer) {
     var offsetX = camera.scrollX * layer.posZ;
-    var offsetY = camera.y * layer.posZ;
+    var offsetY = camera.scrollY * layer.posZ;
 
     // Wrap to a single tile offset using modulo
     var tileX = ((offsetX % w) + w) % w;
@@ -117,7 +117,7 @@ function drawBackgroundStars() {
   // twinkle overlay — sits on the distant layer
   var time = Date.now() / 1000;
   var twinkleOffsetX = camera.scrollX * 0.1;
-  var twinkleOffsetY = camera.y * 0.1;
+  var twinkleOffsetY = camera.scrollY * 0.1;
 
   twinkleStars.forEach(function(star) {
     var alpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));
