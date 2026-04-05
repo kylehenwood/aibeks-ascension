@@ -62,8 +62,11 @@ function restartAnimation() {
     clearVariables();
     gameSetup();
     var firstStar = starHooks[0];
-    camera.x = (firstStar.posX - (canvas.width/2) + (firstStar.size/2)) * -1 / parallax.gamePanel;
+    camera.x = -(firstStar.centerX - canvas.width / 2);
     camera.vx = 0;
+    // Hide character off-screen until falling phase
+    character.centerX = -9999;
+    character.centerY = -9999;
     // Push new level off screen below so it's not visible on this frame
     camera.y = canvas.height * 3;
     return;
@@ -76,8 +79,8 @@ function restartAnimation() {
     camera.vy = 0;
     camera.y = 0;
 
-    // Position character 80px left of first star, above screen
-    character.centerX = starHooks[0].centerX - 80;
+    // Position character 240px left of first star, above screen
+    character.centerX = starHooks[0].centerX - 240;
     character.centerY = -character.size;
     physics.vx = 0;
     physics.vy = 0;

@@ -86,6 +86,9 @@ var starImmunity = {
 
 
 // Parallax depth config — 0 = fixed/infinitely far, 1 = moves with camera, >1 = foreground
+// Parallax depth config — 1 = moves 1:1 with camera (no relative parallax)
+// < 1 = behind (moves slower than camera, appears distant)
+// > 1 = in front (moves faster than camera, appears close)
 var parallax = {
   bgStars1: 0.05,    // very distant tiny stars
   bgStars2: 0.15,    // distant stars
@@ -93,11 +96,11 @@ var parallax = {
   bgStars4: 0.5,     // near stars
   bgStars5: 0.7,     // close bright stars
   twinkle:  0.1,     // twinkle overlay
-  gamePanel: 0.9,    // grapple stars / hooks
+  gamePanel: 1.0,    // grapple stars + character (no parallax)
   cloud1:   1.2,     // background clouds
   cloud2:   1.5,     // small clouds
   cloud3:   1.8,     // tiny clouds (closest)
-  platform: 1.6      // island platform
+  platform: 1.6      // island platform (menu only, in front)
 };
 
 // Physics state is in physics.js (loaded before this file's consumers)

@@ -109,7 +109,7 @@ function generateMoreStars() {
 // Add grid positions for columns fromCol to toCols
 // Subtracts totalOffset so new positions are in current canvas coordinates
 function extendGridPositions(fromCol, toCols) {
-  var startingX = (canvas.width / 2) - 32 + 320 - infiniteGen.totalOffset;
+  var startingX = (canvas.width / 2) - 32 - infiniteGen.totalOffset;
   for (var c = fromCol; c < toCols; c++) {
     var positionX = startingX + c * 64;
     for (var r = 0; r < gridSize.rows; r++) {
@@ -203,7 +203,7 @@ function createGrid() {
 
   var horizontal;
   var vertical;
-  var positionX = 0+(canvas.width/2)-32+320;  // starting position of hooks
+  var positionX = (canvas.width/2) - 32;  // first star column centered on screen
   var positionY = 0;
   var order;
 

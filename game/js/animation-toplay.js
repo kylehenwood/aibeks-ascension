@@ -11,15 +11,12 @@ function animateStart() {
   start.charStartX = character.centerX;
   start.charStartY = character.centerY;
   start.logoStartX = logo.posX;
-  start.cameraStartX = 0;
   start.platformStartX = platform.posX;
 
-  // target camera: center first star on screen
-  if (starHooks.length > 0) {
-    start.targetCameraX = -(starHooks[0].centerX - canvas.width / 2) / parallax.gamePanel;
-  } else {
-    start.targetCameraX = 0;
-  }
+  // Camera starts offset +240 (stars off to the right), animates to 0 (first star centered)
+  var firstStarOffset = starHooks.length > 0 ? -(starHooks[0].centerX - canvas.width / 2) : 0;
+  start.cameraStartX = firstStarOffset + 240;
+  start.targetCameraX = firstStarOffset;
 
   // Calculate parallax factor so platform ends up near left edge (20px margin)
   // Final platform screen X = platformStartX + targetCameraX * parallax = targetScreenX
