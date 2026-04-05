@@ -39,31 +39,50 @@ function createPanel() {
 
 // Generate stars up to current gridSize.cols, continuing from last position
 function generateStars() {
-  var availablePositions = gridSize.rows * gridSize.cols;
-  var position = infiniteGen.lastPosition;
+  var totalCols = gridSize.cols;
+  var col = Math.floor(infiniteGen.lastPosition / gridSize.rows);
   var isFirst = (infiniteGen.totalStars === 0);
 
-  while (position < availablePositions) {
-    // Difficulty scaling - uses totalStars (not array length) so cleanup doesn't reset it
-    // Gap increases by 1 grid position every 8 stars, capped to keep stars on-screen
+  while (col < totalCols) {
+    // Difficulty scaling - column gap increases over time
+    // Min gap of 4 cols (256px) ensures click areas (192px wide) never overlap
+    // Early: 4-5 columns apart, Late: 6-8 columns apart
     var difficulty = Math.floor(infiniteGen.totalStars / 8);
-    var minGap = Math.min(18 + difficulty, 28);
-    var maxGap = Math.min(26 + difficulty, 36);
+    var minColGap = Math.min(4 + difficulty, 6);
+    var maxColGap = Math.min(5 + difficulty, 8);
 
-    if (position === 0) {
-      position = 2;
+    if (col === 0) {
+      col = 1;
     } else {
-      position += rand(minGap, maxGap);
+      col += rand(minColGap, maxColGap);
     }
 
-    if (position < availablePositions) {
+    if (col < totalCols) {
+      var row;
+      if (isFirst) {
+        row = 1;
+      } else {
+        // Pick a row that doesn't match the previous star's row
+        row = rand(0, gridSize.rows - 1);
+        if (starHooks.length > 0) {
+          var prevRow = infiniteGen.lastRow;
+          var attempts = 0;
+          while (row === prevRow && attempts < 10) {
+            row = rand(0, gridSize.rows - 1);
+            attempts++;
+          }
+        }
+      }
+
+      var position = col * gridSize.rows + row;
       createHook(position, isFirst);
       infiniteGen.totalStars++;
+      infiniteGen.lastRow = row;
       isFirst = false;
     }
   }
 
-  infiniteGen.lastPosition = position;
+  infiniteGen.lastPosition = col * gridSize.rows;
 }
 
 // Extend the level by adding more columns, stars, and click areas
@@ -230,4 +249,36 @@ function drawSquare(gridContext,color,size,positionX,positionY) {
     positionY: positionY
   }
   gridPositions.push(position);
+}
+
+// Draw subtle grid lines only in the visible area (no full-canvas image needed)
+function drawVisibleGrid(context, viewLeft, viewRight) {
+  var sq = gridSize.square;
+  var rows = gridSize.rows;
+  var gridStartX = (canvas.width / 2) - 32 + 320 - infiniteGen.totalOffset;
+
+  // Snap to grid boundaries
+  var firstCol = Math.floor((viewLeft - gridStartX) / sq);
+  var lastCol = Math.ceil((viewRight - gridStartX) / sq);
+
+  context.strokeStyle = 'rgba(255,255,255,0.04)';
+  context.lineWidth = 1;
+
+  // Vertical lines
+  for (var c = firstCol; c <= lastCol; c++) {
+    var x = gridStartX + c * sq;
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, rows * sq);
+    context.stroke();
+  }
+
+  // Horizontal lines
+  for (var r = 0; r <= rows; r++) {
+    var y = r * sq;
+    context.beginPath();
+    context.moveTo(Math.max(viewLeft, gridStartX + firstCol * sq), y);
+    context.lineTo(gridStartX + lastCol * sq, y);
+    context.stroke();
+  }
 }

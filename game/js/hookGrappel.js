@@ -3,12 +3,11 @@
 function grappelLaunch(context) {
 
   var increment = 0;
-  swingDirection = null;
-  swingSpeed = 0.1;
   //console.log('grappel launch!');
 
  if (increment < 1) {
-   increment = (hookGrappel.currentIteration/hookGrappel.interations);
+   var t = (hookGrappel.currentIteration/hookGrappel.interations);
+   increment = Math.pow(Math.min(t, 1), physics.GRAPPLE_EASE);
    hookGrappel.currentIteration += 1*dt;
  }
 

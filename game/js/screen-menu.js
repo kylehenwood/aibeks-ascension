@@ -44,7 +44,34 @@ function updateMenu() {
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  // hover animation
+  // Position character on the platform surface
+  var hoverY = platform.posY + platform.hover;
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = hoverY + 26 - character.size / 2;
+
+  // title (behind platform)
+  context.drawImage(logo.canvas, logo.posX, logo.posY);
+
+  // platform scene (drawn by RAF, not here — we just draw logo, character, buttons)
+  drawPlatformScene(context);
+
+  // Draw character on platform
+  drawCharacter(context);
+
+  // intro buttons (disabled for now)
+  // context.drawImage(themeButton.canvas, themeButton.posX, themeButton.posY);
+  // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
+  // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
+
+  // play button
+  context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
+}
+
+// Unified platform drawing — called every frame in all game states.
+// cameraOffset is the current camera.y during transitions (0 when settled).
+// The platform gets a foreground parallax multiplier so it feels closer to camera.
+function drawPlatformScene(context, cameraOffset) {
+  // hover animation (always ticks)
   if (platform.hoverDirection === 'up' && platform.hover <= 0) {
     platform.hoverDirection = 'down';
   }
@@ -56,40 +83,19 @@ function updateMenu() {
   } else {
     platform.hover += 0.024 * dt;
   }
-
   platform.time += 0.016 * dt;
-  var hoverY = platform.posY + platform.hover;
 
-  // Position character on the platform surface
-  character.centerX = platform.posX + platform.width / 2;
-  character.centerY = hoverY + 26 - character.size / 2;
+  var offset = cameraOffset || 0;
+  var platY = platform.posY + platform.hover + offset * parallax.platform;
 
-  // title (behind platform)
-  context.drawImage(logo.canvas, logo.posX, logo.posY);
+  // floating rocks — closer parallax than platform
+  drawFloatingRocks(context, platY, offset, platform.posX);
 
-  // floating rocks (bob independently)
-  for (var i = 0; i < floatingRocks.length; i++) {
-    var rock = floatingRocks[i];
-    var rockBob = Math.sin(platform.time * rock.speed + rock.phase) * 4;
-    drawFloatingRock(context, platform.posX + rock.x, hoverY + rock.y + rockBob, rock.size);
-  }
+  // platform
+  context.drawImage(platform.canvas, platform.posX, platY);
 
-  // floating platform
-  context.drawImage(platform.canvas, platform.posX, hoverY);
-
-  // animated campfire flames
-  var fireCx = platform.posX + platform.width * 0.2;
-  var fireBaseY = hoverY + 28;
+  // campfire flames
+  var fireCx = platform.posX + platform.width * 0.3;
+  var fireBaseY = platY + 32;
   drawCampfireFlames(context, fireCx, fireBaseY, platform.time, 1.6);
-
-  // Draw character on platform (same size as gameplay)
-  drawCharacter(context);
-
-  // intro buttons (disabled for now)
-  // context.drawImage(themeButton.canvas, themeButton.posX, themeButton.posY);
-  // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
-  // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
-
-  // play button
-  context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
 }

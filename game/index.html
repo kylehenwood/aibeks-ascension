@@ -5,25 +5,356 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
-  <title>Starswinger</title>
+  <title>Aibek</title>
   <link rel="stylesheet" type="text/css" href="scss/style.css" />
+  <style>
+    /* Debug panel sidebar */
+    #debug-panel {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      background: #1a1a2e;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      color: #e0e0e0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      font-size: 12px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+    .layout--debug {
+      padding-left: 280px !important;
+    }
+
+    /* Header */
+    .debug-panel__header {
+      padding: 14px 16px;
+      font-weight: bold;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      color: #fff;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    /* Scrollable body */
+    .debug-panel__body {
+      padding: 8px 16px 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .debug-panel__body::-webkit-scrollbar {
+      width: 4px;
+    }
+    .debug-panel__body::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* Sections (collapsible) */
+    .debug-panel__section {
+      margin-top: 14px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.35);
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .debug-panel__section:first-child { margin-top: 4px; }
+    .debug-panel__section::after {
+      content: '▾';
+      font-size: 10px;
+      transition: transform 0.15s;
+    }
+    .debug-panel__section.collapsed::after {
+      transform: rotate(-90deg);
+    }
+    .debug-panel__section-content {
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+    }
+    .debug-panel__section-content.collapsed {
+      max-height: 0 !important;
+      margin: 0;
+    }
+
+    /* Action buttons */
+    .debug-panel__actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .debug-panel__btn {
+      flex: 1;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .debug-panel__btn:hover {
+      background: rgba(255,255,255,0.14);
+    }
+    .debug-panel__btn:active {
+      background: rgba(255,255,255,0.2);
+    }
+    .debug-panel__btn--full {
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    /* State display */
+    .debug-panel__state {
+      padding: 6px 8px;
+      margin-bottom: 4px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .debug-panel__state span {
+      color: #4fc3f7;
+      font-weight: 600;
+    }
+
+    /* Toggles */
+    .debug-panel__toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+    .debug-panel__toggle input {
+      margin: 0;
+      cursor: pointer;
+      accent-color: #4fc3f7;
+    }
+
+    /* Sliders */
+    .debug-panel__slider {
+      margin-bottom: 10px;
+    }
+    .debug-panel__slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+    .debug-panel__slider-label span:last-child {
+      color: #4fc3f7;
+      font-weight: 600;
+    }
+    .debug-panel__slider input[type="range"] {
+      width: 100%;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #4fc3f7;
+    }
+
+    /* Preset controls */
+    .debug-panel__presets {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .debug-panel__select {
+      width: 100%;
+      padding: 5px 6px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .debug-panel__select:focus { border-color: #4fc3f7; outline: none; }
+    .debug-panel__input {
+      flex: 1;
+      min-width: 0;
+      padding: 5px 6px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 11px;
+    }
+    .debug-panel__input::placeholder { color: rgba(255,255,255,0.3); }
+    .debug-panel__input:focus { border-color: #4fc3f7; outline: none; }
+    .debug-panel__preset-row {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .debug-panel__preset-row .debug-panel__select { flex: 1; min-width: 0; }
+    .debug-panel__btn--icon {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      line-height: 1;
+    }
+    .debug-panel__btn--danger {
+      color: #ef5350;
+      border-color: rgba(239,83,80,0.3);
+    }
+    .debug-panel__btn--danger:hover {
+      background: rgba(239,83,80,0.15);
+    }
+
+    /* Info tooltip icon */
+    .debug-panel__info {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      margin-left: 5px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.5);
+      font-size: 9px;
+      font-style: italic;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+      vertical-align: middle;
+    }
+    .debug-panel__info:hover {
+      background: rgba(79,195,247,0.3);
+      color: #fff;
+    }
+    .debug-panel__info:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0,0,0,0.95);
+      border: 1px solid rgba(79,195,247,0.4);
+      color: #fff;
+      font-size: 10px;
+      font-style: normal;
+      font-weight: normal;
+      padding: 5px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      z-index: 10000;
+      pointer-events: none;
+      max-width: 220px;
+      white-space: normal;
+      line-height: 1.3;
+    }
+
+    /* Toast notification */
+    .debug-panel__toast {
+      padding: 6px 8px;
+      margin-top: 6px;
+      text-align: center;
+      font-size: 11px;
+      color: #4fc3f7;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* Parallax panel — right side */
+    #parallax-panel {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      width: 220px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.88);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 11px;
+      z-index: 9999;
+      user-select: none;
+      display: none;
+    }
+    #parallax-panel .pp-header {
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-weight: 600;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+    #parallax-panel .pp-header span:last-child {
+      font-weight: normal;
+      font-size: 9px;
+      opacity: 0.4;
+    }
+    #parallax-panel .pp-body { padding: 8px 10px 10px; }
+    #parallax-panel .pp-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    #parallax-panel .pp-label {
+      width: 70px;
+      flex-shrink: 0;
+      font-size: 10px;
+      color: rgba(255,255,255,0.6);
+    }
+    #parallax-panel .pp-val {
+      width: 32px;
+      text-align: right;
+      color: #4fc3f7;
+      font-weight: 600;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    #parallax-panel input[type="range"] {
+      flex: 1;
+      height: 12px;
+      cursor: pointer;
+      accent-color: #4fc3f7;
+      min-width: 0;
+    }
+    #parallax-panel .pp-bar {
+      height: 6px;
+      margin-top: 2px;
+      border-radius: 3px;
+      background: rgba(79,195,247,0.3);
+      position: relative;
+    }
+    #parallax-panel .pp-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #4fc3f7;
+    }
+  </style>
   <!--<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,400,600' rel='stylesheet' type='text/css'>-->
 </head>
 
 <body class="layout layout--sidebar">
-
-<div class="layout__header">
-  <div class="application-navigation clearfix">
-
-    <a class="application-navigation__item" href="#game-loading">loading</a>
-    <a class="application-navigation__item" href="#game-intro">intro</a>
-    <a class="application-navigation__item" href="#game-menu">menu</a>
-    <a class="application-navigation__item" href="#game-play">play</a>
-    <a class="application-navigation__item">turorial: off</a>
-
-    <a class="application-navigation__item js-sidebar-trigger">Show highscores</a>
-  </div>
-</div>
 
 
 
@@ -91,14 +422,13 @@
 
 
 
-<!-- footer -->
-<div class="layout__footer"></div>
 
 
 <!-- Start game -->
 <!-- todo group / compile & minify these -->
 <script type="text/javascript" src="js/base-functions.js"></script>
 <script type="text/javascript" src="js/variables.js"></script>
+<script type="text/javascript" src="js/physics.js"></script>
 
 <script type="text/javascript" src="js/start-game.js"></script>
 <script type="text/javascript" src="js/game-ui.js"></script>
@@ -147,6 +477,8 @@
 <script type="text/javascript" src="js/moon-powerbar.js"></script>
 
 <script type="text/javascript" src="js/game-resize.js"></script>
+<script type="text/javascript" src="js/debug-panel.js"></script>
+<script type="text/javascript" src="js/parallax-panel.js"></script>
 <script type="text/javascript" src="js/starswinger-init.js"></script>
 
 

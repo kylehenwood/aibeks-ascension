@@ -45,29 +45,7 @@ var menuEntryOffset = 0;
 var menuEntryProgress = 0;
 var charFallVY = 0;
 
-// Shared state for split drawing (behind/in front of clouds)
-var menuDrawState = {
-  active: false,
-  offset: 0,
-  fade: 0
-};
-
-// Called after drawForeground in RAF to draw elements IN FRONT of clouds
-function drawMenuFront() {
-  if (!menuDrawState.active) return;
-  var offset = menuDrawState.offset;
-  var context = canvas.context;
-
-  // Platform — closest, most offset (in front of clouds)
-  var platY = platform.posY + offset * 1.6;
-  context.drawImage(platform.canvas, platform.posX, platY);
-
-  // Campfire on platform
-  platform.time += 0.016 * dt;
-  var fireCx = platform.posX + platform.width * 0.2;
-  var fireBaseY = platY + 28;
-  drawCampfireFlames(context, fireCx, fireBaseY, platform.time, 1.6);
-}
+// Platform is drawn by drawPlatformScene in RAF — no split drawing needed
 
 // gameState === 'restartAnimation'
 // once complete it starts a new game.
@@ -100,12 +78,6 @@ function animateToMenu() {
       var t = (menuPanProgress - 0.5) * 2;
       var ease = 1 - (1 - t) * (1 - t) * (1 - t);
       camera.y = (1 - ease) * panDistance;
-
-      // Platform + buttons drawn after drawForeground (in front of clouds)
-      var fadeT = Math.max(0, (t - 0.4) / 0.6);
-      menuDrawState.active = true;
-      menuDrawState.offset = camera.y;
-      menuDrawState.fade = fadeT;
     }
 
     // Logo — drawn behind clouds, fades in during second half
@@ -172,10 +144,7 @@ function animateToMenu() {
     context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * 1.1);
     context.restore();
 
-    // Set state for front elements (drawn after drawForeground)
-    menuDrawState.active = true;
-    menuDrawState.offset = camera.y;
-    menuDrawState.fade = logo.alpha;
+    // Platform drawn by drawPlatformScene in RAF with camera.y parallax
 
     if (menuEntryProgress >= 1) {
       camera.y = 0;
@@ -210,19 +179,12 @@ function animateToMenu() {
       if (menuAlpha > 1) menuAlpha = 1;
     }
 
+    // Platform drawn by drawPlatformScene in RAF
+
     var context = canvas.context;
-
-    var platY2 = platform.posY + entryOffset * 1.2;
-    context.drawImage(platform.canvas, platform.posX, platY2);
-    platform.time += 0.016 * dt;
-    drawCampfireFlames(context, platform.posX + platform.width * 0.2, platY2 + 28, platform.time, 1.6);
-
     context.save();
     context.globalAlpha = Math.min(logo.alpha, 1);
-
     context.drawImage(logo.canvas, logo.posX, logo.posY + entryOffset * 0.6);
-    // buttons disabled for now
-
     context.restore();
 
     if (menuEntryProgress >= 1) {
@@ -239,13 +201,9 @@ function animateToMenu() {
     charFallVY += 0.4 * dt;
     character.centerY += charFallVY * dt;
 
-    // Draw the scene while character falls
+    // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
-    context.drawImage(platform.canvas, platform.posX, platform.posY);
-    platform.time += 0.016 * dt;
-    drawCampfireFlames(context, platform.posX + platform.width * 0.2, platform.posY + 28, platform.time, 1.6);
     context.drawImage(logo.canvas, logo.posX, logo.posY);
-    drawCharacter(context);
 
     // Landed on platform
     if (character.centerY >= landingY) {
@@ -271,13 +229,10 @@ function animateToMenu() {
     character.centerX = platform.posX + platform.width / 2;
     character.centerY = platform.posY + 26 - character.size / 2;
 
+    // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
     context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
-    context.drawImage(platform.canvas,platform.posX,platform.posY);
-    platform.time += 0.016 * dt;
-    drawCampfireFlames(context, platform.posX + platform.width * 0.2, platform.posY + 28, platform.time, 1.6);
     context.drawImage(logo.canvas, logo.posX, logo.posY);
-    drawCharacter(context);
 
     if (playButton.alpha >= 1 && playButton.progress >= 100) {
       setPlayButton();

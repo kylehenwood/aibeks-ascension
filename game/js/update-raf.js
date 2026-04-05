@@ -56,7 +56,6 @@ function runGame(timestamp) {
 
     case 'menuAnimation':
     // Update
-    menuDrawState.active = false;
     animateToMenu();
     // Draw
     drawBackground();
@@ -64,9 +63,12 @@ function runGame(timestamp) {
     if (menuPanProgress < 0.5 && menuStage === 1) {
       canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
     }
-    drawCharacter(canvas.context);
     drawForeground(canvas.context,true);
-    drawMenuFront();
+    // Platform rises from below clouds — only draw after midpoint transition
+    if (menuStage !== 1 || menuPanProgress >= 0.5) {
+      drawPlatformScene(canvas.context, camera.y);
+    }
+    drawCharacter(canvas.context);
     drawGameOverlay(canvas.context,'fade-out');
     break;
 
@@ -79,6 +81,7 @@ function runGame(timestamp) {
     drawForeground(canvas.context,true);
     canvas.context.drawImage(gameMenu.canvas,0,0);
     break;
+    // Note: platform is drawn inside updateMenu via drawPlatformScene
 
 
     case 'playGame':
@@ -87,10 +90,13 @@ function runGame(timestamp) {
     // update
     drawBackground();
     drawCharacter(gamePanel.context);
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,true);
-    updateMoonPowerBar();
+    // Platform slides off left after game starts
+    drawExitingPlatform(canvas.context);
     // pause icon
     drawPauseIcon();
 
@@ -107,28 +113,38 @@ function runGame(timestamp) {
     restartAnimation();
     //draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
-    drawCharacter(gamePanel.context);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    if (restartFalling) {
+      // Character falling in — draw on main canvas (screen coords)
+      drawCharacter(canvas.context);
+    } else {
+      drawCharacter(gamePanel.context);
+    }
     drawForeground(canvas.context,true);
-    drawGameOverlay(canvas.context,'fade-out');
+    if (!restartFalling) {
+      drawGameOverlay(canvas.context,'fade-out');
+    }
     break;
 
 
     case 'animateGameStart':
     updateGame();
-    updateStart();
     //draw
     drawBackground();
-    // Draw game panel (stars) with fade, but NOT the character
+    // Draw game panel (stars) with fade
     canvas.context.save();
     canvas.context.globalAlpha = hookAlpha;
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     canvas.context.restore();
     drawForeground(canvas.context,true);
-    // Draw character on top at full opacity
-    drawCharacter(canvas.context);
+    // Draw platform, character, logo (on top of everything)
+    updateStart();
     break;
 
 
@@ -136,8 +152,10 @@ function runGame(timestamp) {
     camera.vx = 0;
     //draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
     canvas.context.drawImage(gameOver.canvas,0,0);
@@ -152,8 +170,10 @@ function runGame(timestamp) {
     updateCamera();
     //draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
     drawCharacter(canvas.context);
@@ -164,8 +184,10 @@ function runGame(timestamp) {
     camera.vx = 0;
     //draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     break;
@@ -174,8 +196,10 @@ function runGame(timestamp) {
     case 'gameResume':
     //draw
     drawBackground();
-    canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-    canvas.context.drawImage(clickAreas.canvas,camera.x,camera.y);
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
+    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     // pause icon
@@ -193,11 +217,12 @@ function runGame(timestamp) {
 
 
 function updateCamera() {
+  var gp = parallax.gamePanel;
   if (camera.target === 'hook' && selectedHook) {
-    camera.targetX = (selectedHook.posX - (canvas.width/2) + (selectedHook.size/2)) * -1;
+    camera.targetX = (selectedHook.posX - (canvas.width/2) + (selectedHook.size/2)) * -1 / gp;
     camera.targetY = 0;
   } else if (camera.target === 'character') {
-    camera.targetX = (character.centerX - (canvas.width/2) + (character.size/2)) * -1;
+    camera.targetX = (character.centerX - (canvas.width/2) + (character.size/2)) * -1 / gp;
     camera.targetY = 0;
   }
   // 'position' — targetX/targetY already set by cameraPanTo

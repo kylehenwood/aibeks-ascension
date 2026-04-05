@@ -30,6 +30,9 @@ var gameUserInterface = {
 
 var testingBool = false;
 
+// Game mode: 'endless' or 'platform'
+var gameMode = null;
+
 // Storing the selected hook
 var selectedHook; // selectedHook test is updated with the selected hook
 
@@ -46,29 +49,33 @@ var gridPositions = [];
 var gridImage;
 var gridSize = {
   rows: 5,
-  cols: 250,
+  cols: 50,
   square: 64
 }
 
-// character
-var gravity = 0;
-var terminalVelocity = 11;
-var gravityIncrease = 0.2;
-var momentiumY;
-var momentiumX;
-var friction;
+// Infinite level generation state
+var infiniteGen = {
+  lastPosition: 0,    // last grid position index used for star placement
+  startX: 0,          // character starting X for distance score
+  maxDistance: 0,      // furthest distance reached (for score)
+  totalOffset: 0,     // cumulative world shift applied (for keeping coords bounded)
+  canvasWidth: 8000,  // fixed canvas width (never grows)
+  totalStars: 0,      // total stars ever generated (for difficulty, not affected by cleanup)
+  lastRow: -1         // row of last placed star (to avoid same-row placement)
+}
 
 var character = {
-  size: 64,
+  size: 40,
   currentPosX: 0,
   currentPosY: 0,
-  ropeLength: 320,
-  interations: 16, // times it takes for the character to catch the hook
   swinging: false,
   grappelDelay:320, // ms (this should change based on the distance the character is from the hook)
   centerX: 0,
   centerY: 0,
 }
+
+// Hook fade-in alpha (0 = invisible, 1 = fully visible)
+var hookAlpha = 0;
 
 // Special
 var starImmunity = {
@@ -78,26 +85,19 @@ var starImmunity = {
 
 
 
-// Rope & angle
-var maxAngle; // greatest angle of swing
-var maxAngleIncrement; // if swing angle isn't 90 deg, increase swing speed on down untill it is.
-var currentAngle; //angle in degrees - also the starting position when you connect to a new star
-let momentiumIncrease = 0;
-var momentiumAngle;
-var swingDirection;
-var swingSpeed = 0.07;
-var maxSpeed = 2;
-// !IDEA give momentium boost when character connects to a new hook.
-// draw the rope that connects character to hook
+// Parallax depth config — 0 = fixed/infinitely far, 1 = moves with camera, >1 = foreground
+var parallax = {
+  bgStars1: 0.05,    // very distant tiny stars
+  bgStars2: 0.15,    // distant stars
+  bgStars3: 0.3,     // mid stars
+  bgStars4: 0.5,     // near stars
+  bgStars5: 0.7,     // close bright stars
+  twinkle:  0.1,     // twinkle overlay
+  gamePanel: 0.9,    // grapple stars / hooks
+  cloud1:   1.2,     // background clouds
+  cloud2:   1.5,     // small clouds
+  cloud3:   1.8,     // tiny clouds (closest)
+  platform: 1.6      // island platform
+};
 
-// When a hook is clicked, recaluculate the swing based on the selected hook and the character
-// position.
-var trajectory = {
-  characterPosX: null,
-  characterPosY: null,
-  starPosX: null,
-  starPosY: null,
-  angle: null,
-  hypotenuse: null,
-  radius: null,
-}
+// Physics state is in physics.js (loaded before this file's consumers)

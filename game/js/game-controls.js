@@ -57,13 +57,30 @@ function playClick(mouseX,mouseY) {
     // check to see if user clicked anything, if this stays false through all clicks, detach from hook.
     var clickedSomething = false;
 
+    // Find the closest star to the click point (prevents overlapping click areas)
+    var closestDist = Infinity;
+    var closestIndex = -1;
+
     elements.forEach(function(element) {
       if (mouseY > element.posY && mouseY < element.posY+element.size
-        && mouseX > element.posX+camera.x && mouseX < element.posX+camera.x+element.size) {
-        clickedSomething = true;
-        changeHook(element.index);
+        && mouseX > element.posX+camera.x*parallax.gamePanel && mouseX < element.posX+camera.x*parallax.gamePanel+element.size) {
+        // Get center of this element's star
+        var centerX = element.posX + camera.x*parallax.gamePanel + element.size / 2;
+        var centerY = element.posY + element.size / 2;
+        var dx = mouseX - centerX;
+        var dy = mouseY - centerY;
+        var dist = dx * dx + dy * dy;
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIndex = element.index;
+        }
       }
     });
+
+    if (closestIndex >= 0) {
+      clickedSomething = true;
+      changeHook(closestIndex);
+    }
     // paused button
     if (mouseY > canvas.height-80 && mouseX < 80) {
       clickedSomething = true;

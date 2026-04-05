@@ -1,11 +1,14 @@
 var restartProgress = 0;
 var restartGameReset = false;
 var restartPanSpeed = 0;
+var restartFalling = false;
 
 function restartGame() {
   gameState = "gameRestart";
   restartProgress = 0;
   restartGameReset = false;
+  restartFalling = false;
+  start.platformExiting = false; // don't redraw platform after restart
   camera.target = null;
   detach();
 }
@@ -59,25 +62,44 @@ function restartAnimation() {
     clearVariables();
     gameSetup();
     var firstStar = starHooks[0];
-    camera.x = (firstStar.posX - (canvas.width/2) + (firstStar.size/2)) * -1;
+    camera.x = (firstStar.posX - (canvas.width/2) + (firstStar.size/2)) * -1 / parallax.gamePanel;
     camera.vx = 0;
     // Push new level off screen below so it's not visible on this frame
     camera.y = canvas.height * 3;
     return;
   }
 
-  // Pan complete — camera settled, character falls in
-  if (restartProgress >= 1) {
-    physics.vx = 0;
-    physics.vy = 0;
-    character.centerY = -character.size * 2;
-    character.centerX = canvas.width/2;
-
+  // Pan complete — start character falling in
+  if (restartProgress >= 1 && !restartFalling) {
+    restartFalling = true;
     camera.vx = 0;
     camera.vy = 0;
     camera.y = 0;
 
-    cameraFollowHook();
-    startGame();
+    // Position character 80px left of first star, above screen
+    character.centerX = starHooks[0].centerX - 80;
+    character.centerY = -character.size;
+    physics.vx = 0;
+    physics.vy = 0;
+  }
+
+  // Character falling phase — apply gravity and wait for horizontal alignment
+  if (restartFalling) {
+    physics.vy += physics.GRAVITY * dt;
+    if (physics.vy > physics.TERMINAL_VELOCITY) {
+      physics.vy = physics.TERMINAL_VELOCITY;
+    }
+    character.centerY += physics.vy * dt;
+
+    // When character reaches the star's Y level, grapple
+    if (character.centerY >= starHooks[0].centerY) {
+      restartFalling = false;
+      gameState = "playGame";
+      hookAlpha = 1;
+      infiniteGen.startX = starHooks[0].centerX;
+      infiniteGen.maxDistance = 0;
+      cameraFollowHook();
+      changeHook(0);
+    }
   }
 }

@@ -3,6 +3,78 @@ var tinyClouds = [];
 var smallClouds = [];
 var backgroundClouds = [];
 
+// Cloud interaction particles
+var cloudParticles = [];
+
+// Check if a screen position overlaps an actual cloud pixel
+function isInCloud(screenX, screenY) {
+  // Check each cloud layer
+  var layers = [
+    { clouds: backgroundClouds, baseY: (canvas.height - 200) + camera.y * parallax.cloud1 },
+    { clouds: smallClouds,      baseY: (canvas.height - 200) + camera.y * parallax.cloud2 },
+    { clouds: tinyClouds,       baseY: (canvas.height - 200) + camera.y * parallax.cloud3 }
+  ];
+
+  for (var l = 0; l < layers.length; l++) {
+    var layer = layers[l];
+    for (var c = 0; c < layer.clouds.length; c++) {
+      var cloud = layer.clouds[c];
+      // Position on the cloud canvas
+      var cx = screenX - cloud.posX;
+      var cy = screenY - layer.baseY;
+
+      if (cx >= 0 && cx < cloud.canvas.width && cy >= 0 && cy < cloud.canvas.height) {
+        // Sample the pixel
+        var pixel = cloud.context.getImageData(Math.floor(cx), Math.floor(cy), 1, 1).data;
+        if (pixel[3] > 10) return true; // any non-transparent pixel
+      }
+    }
+  }
+  return false;
+}
+
+function updateCloudParticles(context) {
+  var charScreenX = character.centerX + camera.x;
+  var charScreenY = character.centerY + camera.y;
+
+  // Only spawn if character actually overlaps a cloud pixel
+  if (isInCloud(charScreenX, charScreenY)) {
+    var speed = Math.sqrt(physics.vx * physics.vx + physics.vy * physics.vy);
+    var spawnChance = Math.min(speed * 0.12, 0.6);
+
+    if (Math.random() < spawnChance) {
+      var size = 2 + Math.random() * 3;
+      cloudParticles.push({
+        x: charScreenX + (Math.random() - 0.5) * character.size,
+        y: charScreenY + (Math.random() - 0.5) * character.size * 0.5,
+        vx: physics.vx * (0.2 + Math.random() * 0.3) + (Math.random() - 0.5) * 1,
+        vy: physics.vy * (0.2 + Math.random() * 0.3) + (Math.random() - 0.5) * 1,
+        size: size,
+        life: 1,
+        decay: 0.008 + Math.random() * 0.008
+      });
+    }
+  }
+
+  // Update and draw particles
+  for (var i = cloudParticles.length - 1; i >= 0; i--) {
+    var p = cloudParticles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vx *= 0.99;
+    p.vy *= 0.99;
+    p.life -= p.decay * dt;
+
+    if (p.life <= 0) {
+      cloudParticles.splice(i, 1);
+      continue;
+    }
+
+    context.fillStyle = 'rgba(255,255,255,' + (p.life * 0.5) + ')';
+    context.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+  }
+}
+
 function setupForeground() {
   createBackgroundCloud(0);
   createBackgroundCloud(canvas.width);
@@ -20,13 +92,13 @@ function drawForeground(context,isAnimating) {
 
   // Cloud parallax: multipliers > 1 so clouds rush past faster than the game layer
   // This creates the "overtake" effect when the camera pans down on restart
-  var y1 = camera.y * 1.2;
-  var y2 = camera.y * 1.5;
-  var y3 = camera.y * 1.8;
+  var y1 = camera.y * parallax.cloud1;
+  var y2 = camera.y * parallax.cloud2;
+  var y3 = camera.y * parallax.cloud3;
 
   var x1 = camera.vx * dt;
-  var x2 = camera.vx * dt * 1.2;
-  var x3 = camera.vx * dt * 1.4;
+  var x2 = camera.vx * dt * (parallax.cloud2 / parallax.cloud1);
+  var x3 = camera.vx * dt * (parallax.cloud3 / parallax.cloud1);
 
   // Mouse parallax draw offsets for clouds (menu only)
   var mouseOffX1 = 0, mouseOffX2 = 0, mouseOffX3 = 0;
@@ -55,6 +127,11 @@ function drawForeground(context,isAnimating) {
 
   var tinyCloudY = (canvas.height-200)+y3;
   cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY,mouseOffX3,mouseOffY3);
+
+  // Cloud interaction particles
+  if (gameState === 'playGame' || gameState === 'animateGameOver') {
+    updateCloudParticles(context);
+  }
 }
 
 

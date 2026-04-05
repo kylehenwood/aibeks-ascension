@@ -80,11 +80,11 @@ function setupBackgroundStars() {
 
   // posZ = parallax depth. 0 = fixed, 1 = moves with camera exactly
   // Lower = further away (barely moves), higher = closer (rushes past)
-  starLayers.push({canvas: createStarPanel(0.12, 1), posZ: 0.05});  // very distant tiny stars
-  starLayers.push({canvas: createStarPanel(0.06, 1), posZ: 0.15});  // distant stars
-  starLayers.push({canvas: createStarPanel(0.02, 2), posZ: 0.3});   // mid stars
-  starLayers.push({canvas: createStarPanel(0.01, 2), posZ: 0.5});   // near stars
-  starLayers.push({canvas: createStarPanel(0.005,3), posZ: 0.7});   // close bright stars
+  starLayers.push({canvas: createStarPanel(0.12, 1), key: 'bgStars1'});
+  starLayers.push({canvas: createStarPanel(0.06, 1), key: 'bgStars2'});
+  starLayers.push({canvas: createStarPanel(0.02, 2), key: 'bgStars3'});
+  starLayers.push({canvas: createStarPanel(0.01, 2), key: 'bgStars4'});
+  starLayers.push({canvas: createStarPanel(0.005,3), key: 'bgStars5'});
 }
 
 
@@ -95,8 +95,9 @@ function drawBackgroundStars() {
   var h = canvas.height;
 
   starLayers.forEach(function(layer) {
-    var offsetX = camera.scrollX * layer.posZ;
-    var offsetY = camera.scrollY * layer.posZ;
+    var depth = parallax[layer.key];
+    var offsetX = camera.scrollX * depth;
+    var offsetY = camera.scrollY * depth;
 
     // Wrap to a single tile offset using modulo
     var tileX = ((offsetX % w) + w) % w;
@@ -116,8 +117,8 @@ function drawBackgroundStars() {
 
   // twinkle overlay — sits on the distant layer
   var time = Date.now() / 1000;
-  var twinkleOffsetX = camera.scrollX * 0.1;
-  var twinkleOffsetY = camera.scrollY * 0.1;
+  var twinkleOffsetX = camera.scrollX * parallax.twinkle;
+  var twinkleOffsetY = camera.scrollY * parallax.twinkle;
 
   twinkleStars.forEach(function(star) {
     var alpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));

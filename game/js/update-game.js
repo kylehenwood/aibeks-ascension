@@ -39,8 +39,8 @@ function updateGame() {
   }
   gameUserInterface.score = Math.floor(infiniteGen.maxDistance / 10);
 
-  // Draw grid
-  //gameContext.drawImage(gridImage,0,0);
+  // Draw subtle grid lines in the visible area
+  drawVisibleGrid(gameContext, viewLeft, viewRight);
 
 
   // if character is grappeling a hook

@@ -42,7 +42,7 @@ function updatePlayButton() {
 
   context.beginPath();
   context.fillStyle = 'white';
-  context.fillRect(offset,0,width,2)
+  context.fillRect(offset, playButton.height/2, width, 2);
   context.closePath();
 }
 
@@ -53,17 +53,17 @@ function setPlayButton() {
   var context = playButton.context;
 
   context.clearRect(0,0,playButton.width,playButton.height);
-  // button background
-  context.beginPath();
-  context.fillStyle = 'white';
-  context.fillRect(0,0,playButton.width,2)
-  context.closePath();
-  // button text
+  // button text (above the line)
   context.fillStyle = 'white';
   context.font = 'bold 18px sans-serif';
-  context.textBaseline="middle";
+  context.textBaseline="bottom";
   context.textAlign="center";
-  context.fillText('CLICK TO START', playButton.width/2, playButton.height/2);
+  context.fillText('CLICK TO START', playButton.width/2, playButton.height/2 - 4);
+  // line below text
+  context.beginPath();
+  context.fillStyle = 'white';
+  context.fillRect(0, playButton.height/2, playButton.width, 2);
+  context.closePath();
 }
 
 // Mode selection UI
@@ -224,7 +224,7 @@ var logo = {
 function createLogo() {
 
   // SVG viewBox is 372x120
-  var scale = 0.6;
+  var scale = 0.72;
   var width = Math.round(372 * scale);
   var height = Math.round(120 * scale);
 
@@ -261,9 +261,9 @@ var floatingRocks = [];
 
 function createPlatform() {
 
-  var scale = 0.65;
-  var fullWidth = 360;
-  var fullHeight = 200;
+  var scale = 0.5;
+  var fullWidth = 320;
+  var fullHeight = 340;
   var width = Math.round(fullWidth * scale);
   var height = Math.round(fullHeight * scale);
 
@@ -283,262 +283,186 @@ function createPlatform() {
   platform.width = width;
   platform.height = height;
   platform.posX = (canvas.width/2)-(platform.width/2);
-  platform.posY = (canvas.height/2)-(platform.height/2)+100;
+  platform.posY = (canvas.height/2)-(platform.height/2)+120;
 
-  // create floating rocks (scaled with platform)
+  // create floating rocks — orbit around platform center
+  var cx = width / 2;
+  var cy = height / 2;
   floatingRocks = [
-    { x: -30*scale,  y: 60*scale,  size: Math.round(12*scale), phase: 0,    speed: 0.8 },
-    { x: -18*scale,  y: 90*scale,  size: Math.round(8*scale),  phase: 1.2,  speed: 1.1 },
-    { x: 340*scale,  y: 55*scale,  size: Math.round(14*scale), phase: 0.5,  speed: 0.9 },
-    { x: 355*scale,  y: 85*scale,  size: Math.round(7*scale),  phase: 2.0,  speed: 1.3 },
-    { x: 310*scale,  y: 140*scale, size: Math.round(9*scale),  phase: 1.8,  speed: 1.0 },
-    { x: 20*scale,   y: 145*scale, size: Math.round(10*scale), phase: 0.8,  speed: 0.7 },
-    { x: 160*scale,  y: 170*scale, size: Math.round(6*scale),  phase: 3.0,  speed: 1.4 },
-    { x: 280*scale,  y: 165*scale, size: Math.round(8*scale),  phase: 2.5,  speed: 0.6 }
+    { radius: 100*scale, angle: 0,    size: Math.round(22*scale), orbitSpeed: 0.08, bobPhase: 0,   bobSpeed: 0.7 },
+    { radius: 120*scale, angle: 0.9,  size: Math.round(16*scale), orbitSpeed: 0.06, bobPhase: 1.2, bobSpeed: 0.9 },
+    { radius: 105*scale, angle: 1.8,  size: Math.round(24*scale), orbitSpeed: 0.07, bobPhase: 0.5, bobSpeed: 0.8 },
+    { radius: 130*scale, angle: 2.7,  size: Math.round(14*scale), orbitSpeed: 0.05, bobPhase: 2.0, bobSpeed: 1.1 },
+    { radius: 140*scale, angle: 3.6,  size: Math.round(18*scale), orbitSpeed: 0.09, bobPhase: 1.8, bobSpeed: 0.6 },
+    { radius: 110*scale, angle: 4.5,  size: Math.round(13*scale), orbitSpeed: 0.07, bobPhase: 0.8, bobSpeed: 1.0 },
+    { radius: 150*scale, angle: 5.4,  size: Math.round(10*scale), orbitSpeed: 0.06, bobPhase: 3.0, bobSpeed: 1.2 }
   ];
 }
 
 function drawIsland(context, width, height) {
   var cx = width / 2;
-  var topY = 40; // grass surface Y
+  var topY = 50; // grass surface Y
+  var bottomY = height - 10; // sharp bottom point
 
-  // -- rock body: steep inverted triangle, wide top tapering to sharp point
+  // -- rock body: tall narrow inverted triangle, wide top tapering to a sharp point
   // lightest layer (full silhouette)
   context.beginPath();
-  context.moveTo(10, topY + 6);
-  context.quadraticCurveTo(5, topY + 15, 20, topY + 40);
-  context.quadraticCurveTo(40, topY + 70, 70, topY + 95);
-  context.quadraticCurveTo(100, topY + 120, 130, topY + 135);
-  context.quadraticCurveTo(155, topY + 150, cx, topY + 155);  // sharp bottom point
-  context.quadraticCurveTo(205, topY + 150, 230, topY + 135);
-  context.quadraticCurveTo(260, topY + 120, 290, topY + 95);
-  context.quadraticCurveTo(320, topY + 70, 340, topY + 40);
-  context.quadraticCurveTo(355, topY + 15, 350, topY + 6);
+  context.moveTo(15, topY + 8);
+  context.quadraticCurveTo(10, topY + 30, 30, topY + 70);
+  context.quadraticCurveTo(50, topY + 120, 80, topY + 170);
+  context.quadraticCurveTo(110, topY + 210, 135, topY + 240);
+  context.quadraticCurveTo(cx - 10, bottomY + 5, cx, bottomY); // sharp bottom
+  context.quadraticCurveTo(cx + 10, bottomY + 5, 185, topY + 240);
+  context.quadraticCurveTo(210, topY + 210, 240, topY + 170);
+  context.quadraticCurveTo(270, topY + 120, 290, topY + 70);
+  context.quadraticCurveTo(310, topY + 30, 305, topY + 8);
   context.closePath();
   context.fillStyle = 'rgba(255,255,255,0.2)';
   context.fill();
 
   // mid rock layer
   context.beginPath();
-  context.moveTo(35, topY + 30);
-  context.quadraticCurveTo(55, topY + 60, 85, topY + 90);
-  context.quadraticCurveTo(115, topY + 115, 145, topY + 135);
-  context.quadraticCurveTo(cx, topY + 150, 215, topY + 135);
-  context.quadraticCurveTo(245, topY + 115, 275, topY + 90);
-  context.quadraticCurveTo(305, topY + 60, 325, topY + 30);
+  context.moveTo(40, topY + 40);
+  context.quadraticCurveTo(60, topY + 90, 90, topY + 145);
+  context.quadraticCurveTo(120, topY + 195, 140, topY + 230);
+  context.quadraticCurveTo(cx, bottomY, 180, topY + 230);
+  context.quadraticCurveTo(200, topY + 195, 230, topY + 145);
+  context.quadraticCurveTo(260, topY + 90, 280, topY + 40);
   context.closePath();
   context.fillStyle = 'rgba(255,255,255,0.15)';
   context.fill();
 
-  // deep rock layer
+  // deep rock layer (near the tip)
   context.beginPath();
-  context.moveTo(75, topY + 75);
-  context.quadraticCurveTo(110, topY + 110, 145, topY + 130);
-  context.quadraticCurveTo(cx, topY + 150, 215, topY + 130);
-  context.quadraticCurveTo(250, topY + 110, 285, topY + 75);
+  context.moveTo(80, topY + 120);
+  context.quadraticCurveTo(110, topY + 180, 140, topY + 230);
+  context.quadraticCurveTo(cx, bottomY, 180, topY + 230);
+  context.quadraticCurveTo(210, topY + 180, 240, topY + 120);
   context.closePath();
   context.fillStyle = 'rgba(255,255,255,0.1)';
   context.fill();
 
-  // -- organic vein/root patterns running through rock
-  context.strokeStyle = 'rgba(255,255,255,0.12)';
+  // -- vein/crack patterns through the rock
+  context.strokeStyle = 'rgba(255,255,255,0.1)';
   context.lineWidth = 2;
 
-  // central trunk vein
+  // central vein
   context.beginPath();
-  context.moveTo(cx, topY + 15);
-  context.quadraticCurveTo(cx - 5, topY + 50, cx - 8, topY + 80);
-  context.quadraticCurveTo(cx - 3, topY + 120, cx, topY + 150);
+  context.moveTo(cx, topY + 20);
+  context.quadraticCurveTo(cx - 6, topY + 80, cx - 8, topY + 140);
+  context.quadraticCurveTo(cx - 3, topY + 220, cx, bottomY);
   context.stroke();
 
   // left branch
   context.beginPath();
-  context.moveTo(cx - 8, topY + 60);
-  context.quadraticCurveTo(cx - 30, topY + 75, cx - 50, topY + 70);
+  context.moveTo(cx - 8, topY + 80);
+  context.quadraticCurveTo(cx - 35, topY + 100, cx - 55, topY + 90);
   context.stroke();
 
   // right branch
   context.beginPath();
-  context.moveTo(cx - 3, topY + 80);
-  context.quadraticCurveTo(cx + 20, topY + 90, cx + 45, topY + 80);
+  context.moveTo(cx - 5, topY + 130);
+  context.quadraticCurveTo(cx + 25, topY + 145, cx + 45, topY + 130);
   context.stroke();
 
-  // lower left branch
+  // lower branches
   context.beginPath();
-  context.moveTo(cx - 5, topY + 100);
-  context.quadraticCurveTo(cx - 25, topY + 115, cx - 35, topY + 105);
+  context.moveTo(cx - 5, topY + 170);
+  context.quadraticCurveTo(cx - 25, topY + 185, cx - 30, topY + 175);
   context.stroke();
 
-  // lower right branch
   context.beginPath();
-  context.moveTo(cx, topY + 115);
-  context.quadraticCurveTo(cx + 15, topY + 125, cx + 25, topY + 118);
+  context.moveTo(cx, topY + 200);
+  context.quadraticCurveTo(cx + 18, topY + 215, cx + 22, topY + 205);
   context.stroke();
 
-  // -- lighter edge highlights on rock
-  context.strokeStyle = 'rgba(255,255,255,0.08)';
+  // -- edge highlights
+  context.strokeStyle = 'rgba(255,255,255,0.07)';
   context.lineWidth = 3;
 
-  // left edge highlight
   context.beginPath();
-  context.moveTo(18, topY + 20);
-  context.quadraticCurveTo(30, topY + 40, 50, topY + 65);
-  context.quadraticCurveTo(75, topY + 90, 100, topY + 108);
+  context.moveTo(22, topY + 25);
+  context.quadraticCurveTo(40, topY + 60, 60, topY + 110);
+  context.quadraticCurveTo(85, topY + 160, 110, topY + 195);
   context.stroke();
 
-  // right edge highlight
   context.beginPath();
-  context.moveTo(342, topY + 20);
-  context.quadraticCurveTo(330, topY + 40, 310, topY + 65);
-  context.quadraticCurveTo(285, topY + 90, 260, topY + 108);
+  context.moveTo(298, topY + 25);
+  context.quadraticCurveTo(280, topY + 60, 260, topY + 110);
+  context.quadraticCurveTo(235, topY + 160, 210, topY + 195);
   context.stroke();
 
-  // -- embedded boulder with grass ring (upper-center of rock face)
-  var boulderX = cx + 10;
-  var boulderY = topY + 50;
-
-  // grass ring behind boulder
-  context.fillStyle = 'rgba(255,255,255,0.5)';
+  // -- grass top: thick overhanging layer
   context.beginPath();
-  context.ellipse(boulderX, boulderY + 2, 18, 10, 0, 0, Math.PI * 2);
-  context.fill();
-
-  // grass ring dots
-  context.fillStyle = 'rgba(255,255,255,0.7)';
-  for (var gi = 0; gi < 10; gi++) {
-    var ga = (gi / 10) * Math.PI * 2;
-    var gx = boulderX + Math.cos(ga) * 16;
-    var gy = boulderY + 2 + Math.sin(ga) * 8;
-    context.beginPath();
-    context.arc(gx, gy, 1.5, 0, Math.PI * 2);
-    context.fill();
-  }
-
-  // boulder
-  context.fillStyle = 'rgba(255,255,255,0.3)';
-  context.beginPath();
-  context.ellipse(boulderX, boulderY - 3, 12, 10, 0, 0, Math.PI * 2);
-  context.fill();
-
-  // boulder highlight
-  context.fillStyle = 'rgba(255,255,255,0.15)';
-  context.beginPath();
-  context.ellipse(boulderX - 2, boulderY - 6, 8, 5, -0.2, 0, Math.PI * 2);
-  context.fill();
-
-  // -- grass top: thick, overhanging with dot texture
-  // grass body (thick band)
-  context.beginPath();
-  context.moveTo(4, topY + 10);
-  // left overhang droops down
-  context.quadraticCurveTo(0, topY + 18, 8, topY + 22);
-  context.quadraticCurveTo(20, topY + 26, 35, topY + 20);
-  // underside of grass
-  context.quadraticCurveTo(80, topY + 22, 130, topY + 18);
-  context.lineTo(230, topY + 18);
-  context.quadraticCurveTo(280, topY + 22, 325, topY + 20);
-  // right overhang droops down
-  context.quadraticCurveTo(340, topY + 26, 352, topY + 22);
-  context.quadraticCurveTo(360, topY + 18, 356, topY + 10);
-  // top surface
-  context.quadraticCurveTo(340, topY - 6, 300, topY - 2);
-  context.quadraticCurveTo(260, topY - 10, 220, topY - 6);
-  context.quadraticCurveTo(cx, topY - 12, 140, topY - 6);
+  context.moveTo(6, topY + 12);
+  // left overhang
+  context.quadraticCurveTo(2, topY + 20, 10, topY + 24);
+  context.quadraticCurveTo(25, topY + 28, 40, topY + 22);
+  // underside
+  context.quadraticCurveTo(90, topY + 24, 130, topY + 20);
+  context.lineTo(190, topY + 20);
+  context.quadraticCurveTo(230, topY + 24, 280, topY + 22);
+  // right overhang
+  context.quadraticCurveTo(295, topY + 28, 310, topY + 24);
+  context.quadraticCurveTo(318, topY + 20, 314, topY + 12);
+  // top surface undulation
+  context.quadraticCurveTo(300, topY - 6, 260, topY - 2);
+  context.quadraticCurveTo(220, topY - 10, cx, topY - 8);
   context.quadraticCurveTo(100, topY - 10, 60, topY - 2);
-  context.quadraticCurveTo(20, topY - 6, 4, topY + 10);
+  context.quadraticCurveTo(20, topY - 6, 6, topY + 12);
   context.closePath();
   context.fillStyle = 'rgba(255,255,255,0.65)';
   context.fill();
 
   // bright top edge
   context.beginPath();
-  context.moveTo(8, topY + 6);
+  context.moveTo(10, topY + 6);
   context.quadraticCurveTo(40, topY - 8, 80, topY - 4);
   context.quadraticCurveTo(120, topY - 12, cx, topY - 8);
-  context.quadraticCurveTo(240, topY - 12, 280, topY - 4);
-  context.quadraticCurveTo(320, topY - 8, 352, topY + 6);
-  // return path
-  context.quadraticCurveTo(320, topY - 4, 280, topY);
-  context.quadraticCurveTo(240, topY - 8, cx, topY - 4);
+  context.quadraticCurveTo(200, topY - 12, 240, topY - 4);
+  context.quadraticCurveTo(280, topY - 8, 310, topY + 6);
+  context.quadraticCurveTo(280, topY - 4, 240, topY);
+  context.quadraticCurveTo(200, topY - 8, cx, topY - 4);
   context.quadraticCurveTo(120, topY - 8, 80, topY);
-  context.quadraticCurveTo(40, topY - 4, 8, topY + 6);
+  context.quadraticCurveTo(40, topY - 4, 10, topY + 6);
   context.closePath();
   context.fillStyle = 'white';
   context.fill();
 
-  // dot texture on grass surface
-  context.fillStyle = 'rgba(255,255,255,0.9)';
-  var dots = [
-    [25,topY+4], [45,topY+2], [65,topY+6], [85,topY+3],
-    [105,topY+7], [125,topY+4], [145,topY+8], [165,topY+5],
-    [185,topY+8], [205,topY+5], [225,topY+8], [245,topY+4],
-    [265,topY+7], [285,topY+3], [305,topY+6], [325,topY+2],
-    [340,topY+5], [55,topY+10], [115,topY+12], [175,topY+11],
-    [235,topY+12], [295,topY+10], [35,topY+14], [80,topY+15],
-    [155,topY+14], [210,topY+15], [275,topY+14], [330,topY+12]
-  ];
-  for (var di = 0; di < dots.length; di++) {
-    context.beginPath();
-    context.arc(dots[di][0], dots[di][1], 1.2, 0, Math.PI * 2);
-    context.fill();
-  }
-
-  // hanging vine/grass strands from edges
-  context.strokeStyle = 'rgba(255,255,255,0.45)';
+  // hanging vine strands
+  context.strokeStyle = 'rgba(255,255,255,0.4)';
   context.lineWidth = 2;
 
-  // left hanging strands
   context.beginPath();
-  context.moveTo(12, topY + 16);
-  context.quadraticCurveTo(8, topY + 32, 16, topY + 38);
-  context.quadraticCurveTo(22, topY + 40, 24, topY + 34);
+  context.moveTo(14, topY + 18);
+  context.quadraticCurveTo(10, topY + 34, 18, topY + 40);
+  context.quadraticCurveTo(24, topY + 42, 26, topY + 36);
   context.stroke();
 
   context.beginPath();
-  context.moveTo(30, topY + 20);
-  context.quadraticCurveTo(24, topY + 30, 28, topY + 36);
+  context.moveTo(35, topY + 22);
+  context.quadraticCurveTo(30, topY + 34, 34, topY + 38);
   context.stroke();
 
   context.beginPath();
-  context.moveTo(45, topY + 18);
-  context.quadraticCurveTo(40, topY + 28, 44, topY + 32);
-  context.stroke();
-
-  // right hanging strands
-  context.beginPath();
-  context.moveTo(348, topY + 16);
-  context.quadraticCurveTo(352, topY + 32, 344, topY + 38);
-  context.quadraticCurveTo(338, topY + 40, 336, topY + 34);
+  context.moveTo(300, topY + 18);
+  context.quadraticCurveTo(306, topY + 34, 298, topY + 40);
+  context.quadraticCurveTo(292, topY + 42, 290, topY + 36);
   context.stroke();
 
   context.beginPath();
-  context.moveTo(330, topY + 20);
-  context.quadraticCurveTo(336, topY + 30, 332, topY + 36);
+  context.moveTo(285, topY + 22);
+  context.quadraticCurveTo(290, topY + 34, 286, topY + 38);
   context.stroke();
-
-  context.beginPath();
-  context.moveTo(315, topY + 18);
-  context.quadraticCurveTo(320, topY + 28, 316, topY + 32);
-  context.stroke();
-
-  // -- grass tufts on top
-  context.fillStyle = 'white';
-  drawGrassTuft(context, 25, topY - 4, 10);
-  drawGrassTuft(context, 55, topY - 6, 13);
-  drawGrassTuft(context, 95, topY - 8, 10);
-  drawGrassTuft(context, 265, topY - 8, 11);
-  drawGrassTuft(context, 305, topY - 6, 12);
-  drawGrassTuft(context, 340, topY - 4, 9);
 
   // -- character circle (sitting right of center)
   context.fillStyle = 'white';
   context.beginPath();
-  context.arc(cx + 50, topY - 16, 12, 0, Math.PI * 2);
+  context.arc(cx + 45, topY - 16, 12, 0, Math.PI * 2);
   context.fill();
 
-  // -- campfire (left side of island)
-  var fireX = cx * 0.4; // far left
-  // logs
+  // -- campfire (left of center)
+  var fireX = cx - 50;
   context.fillStyle = 'rgba(255,255,255,0.5)';
   context.save();
   context.translate(fireX - 10, topY - 1);
@@ -569,6 +493,25 @@ function drawGrassTuft(context, x, y, h) {
   context.quadraticCurveTo(x + 2, y - h, x + 4, y);
   context.closePath();
   context.fill();
+}
+
+// Draw all floating rocks around the platform at a given Y position.
+// parallaxY is an optional offset that gets scaled by 1.8 (closer to camera than platform).
+// Draw floating rocks orbiting the platform center.
+// platX/platY = top-left of platform on screen.
+function drawFloatingRocks(context, platY, parallaxY, platX) {
+  var px = (platX !== undefined) ? platX : platform.posX;
+  var centerX = px + platform.width / 2;
+  var centerY = platY + platform.height / 2;
+
+  for (var i = 0; i < floatingRocks.length; i++) {
+    var rock = floatingRocks[i];
+    var a = rock.angle + platform.time * rock.orbitSpeed;
+    var rx = centerX + Math.cos(a) * rock.radius;
+    var ry = centerY + Math.sin(a) * rock.radius * 0.5; // squash Y for elliptical orbit
+    var bob = Math.sin(platform.time * rock.bobSpeed + rock.bobPhase) * 3;
+    drawFloatingRock(context, rx, ry + bob, rock.size);
+  }
 }
 
 // draw a small floating rock - organic rounded shape

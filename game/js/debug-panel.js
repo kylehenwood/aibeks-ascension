@@ -68,7 +68,10 @@ function createDebugPanel() {
         sliderHTML('Terminal Velocity', 'debug-terminal', '4', '24', '0.5', 'Maximum freefall speed') +
         sliderHTML('Rope Damping', 'debug-damping', '0.98', '1.0', '0.001', 'Energy retention per frame. 1.0 = no loss, lower = more drag') +
         sliderHTML('Rope Segments', 'debug-segments', '3', '12', '1', 'Number of points in the Verlet rope chain. More = bendier') +
-        sliderHTML('Elasticity', 'debug-elasticity', '0', '1', '0.05', 'Rope stiffness. 0 = very stretchy, 1 = rigid. Stretches more at high momentum')
+        sliderHTML('Elasticity', 'debug-elasticity', '0', '1', '0.05', 'Rope stiffness. 0 = very stretchy, 1 = rigid. Stretches more at high momentum') +
+        sliderHTML('Rigidity', 'debug-rigidity', '0', '1', '0.01', 'Straightens the beam. 0 = fully flexible rope, 1 = perfectly straight moonbeam') +
+        sliderHTML('Sparkle Rate', 'debug-sparkle-rate', '0', '1', '0.05', 'Chance per rope point per frame to emit a sparkle. 0 = off') +
+        sliderHTML('Sparkle Life', 'debug-sparkle-life', '10', '120', '5', 'How many frames each sparkle lasts before fading out')
       ) +
 
       // Stars - starts collapsed
@@ -147,6 +150,9 @@ var debugDefaults = {
   damping: 0.999,
   ropeSegments: 6,
   elasticity: 0.8,
+  rigidity: 0,
+  sparkleRate: 0.04,
+  sparkleLife: 60,
   starDecayRate: 0.02,
   retractPercent: 0.15,
   retractSpeed: 0.03,
@@ -180,6 +186,9 @@ function getDebugSettings() {
     damping: physics.DAMPING,
     ropeSegments: physics.ROPE_SEGMENTS,
     elasticity: physics.ELASTICITY,
+    rigidity: physics.RIGIDITY,
+    sparkleRate: physics.SPARKLE_RATE,
+    sparkleLife: physics.SPARKLE_LIFE,
     starDecayRate: debugStarDecayRate,
     retractPercent: physics.RETRACT_PERCENT,
     retractSpeed: physics.RETRACT_SPEED,
@@ -205,6 +214,9 @@ function applyDebugSettings(s) {
   if (s.damping !== undefined) physics.DAMPING = s.damping;
   if (s.ropeSegments !== undefined) physics.ROPE_SEGMENTS = s.ropeSegments;
   if (s.elasticity !== undefined) physics.ELASTICITY = s.elasticity;
+  if (s.rigidity !== undefined) physics.RIGIDITY = s.rigidity;
+  if (s.sparkleRate !== undefined) physics.SPARKLE_RATE = s.sparkleRate;
+  if (s.sparkleLife !== undefined) physics.SPARKLE_LIFE = s.sparkleLife;
   if (s.starDecayRate !== undefined) debugStarDecayRate = s.starDecayRate;
   if (s.retractPercent !== undefined) physics.RETRACT_PERCENT = s.retractPercent;
   if (s.retractSpeed !== undefined) physics.RETRACT_SPEED = s.retractSpeed;
@@ -250,6 +262,9 @@ function settingsToClipboard() {
     'physics.DAMPING = ' + s.damping + ';',
     'physics.ROPE_SEGMENTS = ' + s.ropeSegments + ';',
     'physics.ELASTICITY = ' + s.elasticity + ';',
+    'physics.RIGIDITY = ' + s.rigidity + ';',
+    'physics.SPARKLE_RATE = ' + s.sparkleRate + ';',
+    'physics.SPARKLE_LIFE = ' + s.sparkleLife + ';',
     'physics.RETRACT_PERCENT = ' + s.retractPercent + ';',
     'physics.RETRACT_SPEED = ' + s.retractSpeed + ';',
     'physics.RATCHET = ' + s.ratchet + ';',
@@ -398,6 +413,33 @@ function initDebugControls() {
     elasticityVal.textContent = this.value;
   });
 
+  var rigiditySlider = document.getElementById('debug-rigidity');
+  var rigidityVal = document.getElementById('debug-rigidity-val');
+  rigiditySlider.value = physics.RIGIDITY;
+  rigidityVal.textContent = physics.RIGIDITY;
+  rigiditySlider.addEventListener('input', function() {
+    physics.RIGIDITY = parseFloat(this.value);
+    rigidityVal.textContent = this.value;
+  });
+
+  var sparkleRateSlider = document.getElementById('debug-sparkle-rate');
+  var sparkleRateVal = document.getElementById('debug-sparkle-rate-val');
+  sparkleRateSlider.value = physics.SPARKLE_RATE;
+  sparkleRateVal.textContent = physics.SPARKLE_RATE;
+  sparkleRateSlider.addEventListener('input', function() {
+    physics.SPARKLE_RATE = parseFloat(this.value);
+    sparkleRateVal.textContent = this.value;
+  });
+
+  var sparkleLifeSlider = document.getElementById('debug-sparkle-life');
+  var sparkleLifeVal = document.getElementById('debug-sparkle-life-val');
+  sparkleLifeSlider.value = physics.SPARKLE_LIFE;
+  sparkleLifeVal.textContent = physics.SPARKLE_LIFE;
+  sparkleLifeSlider.addEventListener('input', function() {
+    physics.SPARKLE_LIFE = parseFloat(this.value);
+    sparkleLifeVal.textContent = this.value;
+  });
+
   var decaySlider = document.getElementById('debug-decay');
   var decayVal = document.getElementById('debug-decay-val');
   decaySlider.value = debugStarDecayRate;
@@ -522,6 +564,12 @@ function initDebugControls() {
     segmentsVal.textContent = physics.ROPE_SEGMENTS;
     elasticitySlider.value = physics.ELASTICITY;
     elasticityVal.textContent = physics.ELASTICITY;
+    rigiditySlider.value = physics.RIGIDITY;
+    rigidityVal.textContent = physics.RIGIDITY;
+    sparkleRateSlider.value = physics.SPARKLE_RATE;
+    sparkleRateVal.textContent = physics.SPARKLE_RATE;
+    sparkleLifeSlider.value = physics.SPARKLE_LIFE;
+    sparkleLifeVal.textContent = physics.SPARKLE_LIFE;
     decaySlider.value = debugStarDecayRate;
     decayVal.textContent = debugStarDecayRate;
     grappleSlider.value = character.grappelDelay;
