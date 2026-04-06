@@ -59,13 +59,13 @@ function runGame(timestamp) {
     animateToMenu();
     // Draw
     drawBackground();
-    // Only draw game panel during first half (old level exiting)
-    if (menuPanProgress < 0.5 && menuStage === 1) {
+    // Only draw game panel during first half of sweep (old level exiting)
+    if (menuStage === 10 && !menuPanReset) {
       canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
     }
     drawForeground(canvas.context,true);
-    // Platform rises from below clouds — only draw after midpoint transition
-    if (menuStage !== 1 || menuPanProgress >= 0.5) {
+    // Platform rises from below — only draw after midpoint swap (or non-sweep stages)
+    if (menuStage !== 10 || menuPanReset) {
       drawPlatformScene(canvas.context, camera.y);
     }
     drawCharacter(canvas.context);
@@ -120,7 +120,7 @@ function runGame(timestamp) {
     drawCharacter(gamePanel.context);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
-    if (!restartFalling) {
+    if (restartPhase !== 'falling') {
       drawGameOverlay(canvas.context,'fade-out');
     }
     break;
