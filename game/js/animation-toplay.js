@@ -1,6 +1,6 @@
 // Shift all stars so the first star center is 320px right of the platform right edge
 function positionFirstStar() {
-  var targetFirstStarX = platform.posX + platform.width + 320;
+  var targetFirstStarX = platform.posX + platform.width + 480;
   var shift = targetFirstStarX - starHooks[0].centerX;
   if (shift === 0) return;
   for (var i = 0; i < starHooks.length; i++) {
@@ -110,7 +110,7 @@ function updateStart() {
     camera.scrollX += camera.vx;
 
     // Platform world position + camera offset
-    var platScreenX = platform.posX + camera.x;
+    var platScreenX = start.platformStartX + camera.x * start.platformParallax;
     var hoverY = platform.posY + platform.hover;
 
     // Character stays on platform surface
@@ -122,7 +122,7 @@ function updateStart() {
     if (start.logoAlpha > 0) {
       context.save();
       context.globalAlpha = start.logoAlpha;
-      var logoX = start.logoStartX + camera.x * 0.5;
+      var logoX = start.logoStartX + camera.x * parallax.logo;
       context.drawImage(logo.canvas, logoX, logo.posY);
       context.restore();
     }
@@ -158,7 +158,7 @@ function updateStart() {
     var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
     // Platform world position + camera offset
-    var platScreenX = platform.posX + camera.x;
+    var platScreenX = start.platformStartX + camera.x * start.platformParallax;
     var walkStartX = platScreenX + platform.width / 2;
     var walkEndX = platScreenX + platform.width - character.size / 2 - 8;
     character.centerX = walkStartX + (walkEndX - walkStartX) * ease;
@@ -194,7 +194,7 @@ function updateStart() {
       character.centerX += 1.5 * dt;
 
       // draw platform with camera offset
-      var platScreenX = platform.posX + camera.x;
+      var platScreenX = start.platformStartX + camera.x * start.platformParallax;
       var hoverY = platform.posY + platform.hover;
       context.drawImage(platform.canvas, platScreenX, hoverY);
       drawFloatingRocks(context, hoverY, 0, platScreenX);
@@ -207,9 +207,6 @@ function updateStart() {
       if (start.hopVY > 0.5) {
         start.hopping = false;
         start.platformExiting = true;
-        // Switch platform to 0.6 parallax so it drifts off gradually during gameplay
-        start.platformParallax = 0.6;
-        start.platformStartX = platScreenX - camera.x * 0.6;
         // Convert screen position to world position
         character.centerX = character.centerX - camera.x;
         physics.vx = 1.5;

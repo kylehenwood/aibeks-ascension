@@ -79,8 +79,8 @@ function restartAnimation() {
     camera.vy = 0;
     camera.y = 0;
 
-    // Position character 320px left of first star, above screen
-    character.centerX = starHooks[0].centerX - 320;
+    // Position character 240px left of first star (screen coords), above screen
+    character.centerX = starHooks[0].centerX + camera.x - 240;
     character.centerY = -character.size;
     physics.vx = 0;
     physics.vy = 0;
@@ -94,8 +94,8 @@ function restartAnimation() {
     }
     character.centerY += physics.vy * dt;
 
-    // When character reaches the star's Y level, grapple
-    if (character.centerY >= starHooks[0].centerY) {
+    // When character is 40px above the star's Y level, grapple
+    if (character.centerY >= starHooks[0].centerY - 40) {
       restartFalling = false;
       gameState = "playGame";
       hookAlpha = 1;

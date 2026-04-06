@@ -96,9 +96,9 @@ function drawForeground(context,isAnimating) {
   var y2 = camera.y * parallax.cloud2;
   var y3 = camera.y * parallax.cloud3;
 
-  var x1 = camera.vx * dt;
-  var x2 = camera.vx * dt * (parallax.cloud2 / parallax.cloud1);
-  var x3 = camera.vx * dt * (parallax.cloud3 / parallax.cloud1);
+  var x1 = camera.vx * dt * parallax.cloud1;
+  var x2 = camera.vx * dt * parallax.cloud2;
+  var x3 = camera.vx * dt * parallax.cloud3;
 
   // Mouse parallax draw offsets for clouds (menu only)
   var mouseOffX1 = 0, mouseOffX2 = 0, mouseOffX3 = 0;

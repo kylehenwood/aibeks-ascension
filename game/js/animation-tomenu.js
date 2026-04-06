@@ -10,8 +10,6 @@ function backToMenu() {
 
   playButton.alpha = 0;
 
-  platform.posX = (canvas.width/2)-(platform.width/2);
-
   // set character position
   character.centerY = -100;
   character.centerX = canvas.width/2;
@@ -87,7 +85,7 @@ function animateToMenu() {
       var context = canvas.context;
       context.save();
       context.globalAlpha = logoFade;
-      context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * 1.1);
+      context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY + camera.y * 1.1);
       context.restore();
     }
 
@@ -96,6 +94,7 @@ function animateToMenu() {
       menuPanReset = true;
       clearVariables();
       gameSetup();
+      platform.posX = (canvas.width/2)-(platform.width/2);
       camera.x = 0;
       camera.y = canvas.height * 3;
       return;
@@ -141,7 +140,7 @@ function animateToMenu() {
     // Title — farthest back (behind clouds)
     context.save();
     context.globalAlpha = logo.alpha;
-    context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * 1.1);
+    context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY + camera.y * 1.1);
     context.restore();
 
     // Platform drawn by drawPlatformScene in RAF with camera.y parallax
@@ -184,7 +183,7 @@ function animateToMenu() {
     var context = canvas.context;
     context.save();
     context.globalAlpha = Math.min(logo.alpha, 1);
-    context.drawImage(logo.canvas, logo.posX, logo.posY + entryOffset * 0.6);
+    context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY + entryOffset * 0.6);
     context.restore();
 
     if (menuEntryProgress >= 1) {
@@ -203,7 +202,7 @@ function animateToMenu() {
 
     // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
-    context.drawImage(logo.canvas, logo.posX, logo.posY);
+    context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY);
 
     // Landed on platform
     if (character.centerY >= landingY) {
@@ -232,7 +231,7 @@ function animateToMenu() {
     // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
     context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
-    context.drawImage(logo.canvas, logo.posX, logo.posY);
+    context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY);
 
     if (playButton.alpha >= 1 && playButton.progress >= 100) {
       setPlayButton();

@@ -345,13 +345,9 @@ function initDebugControls() {
   });
 
   document.getElementById('debug-goto-menu').addEventListener('click', function() {
-    if (gameState === 'gameMenu') return;
+    if (gameState === 'gameMenu' || gameState === 'menuAnimation') return;
     detach();
-    clearVariables();
-    camera.x = 0;
-    camera.y = 0;
-    gameSetup();
-    setupMenu();
+    backToMenu();
   });
 
   document.getElementById('debug-goto-play').addEventListener('click', function() {

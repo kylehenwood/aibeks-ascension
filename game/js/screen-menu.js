@@ -50,7 +50,7 @@ function updateMenu() {
   character.centerY = hoverY + 26 - character.size / 2;
 
   // title (behind platform)
-  context.drawImage(logo.canvas, logo.posX, logo.posY);
+  context.drawImage(logo.canvas, logo.posX + camera.scrollX * parallax.logo, logo.posY);
 
   // platform scene (drawn by RAF, not here — we just draw logo, character, buttons)
   drawPlatformScene(context);

@@ -100,7 +100,8 @@ var parallax = {
   cloud1:   1.2,     // background clouds
   cloud2:   1.5,     // small clouds
   cloud3:   1.8,     // tiny clouds (closest)
-  platform: 1.6      // island platform (menu only, in front)
+  platform: 1.6,     // island platform (menu only, in front)
+  logo:     0.3      // title text (behind, slow drift)
 };
 
 // Physics state is in physics.js (loaded before this file's consumers)
