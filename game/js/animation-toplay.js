@@ -1,34 +1,39 @@
+// Shift all stars so the first star center is 320px right of the platform right edge
+function positionFirstStar() {
+  var targetFirstStarX = platform.posX + platform.width + 320;
+  var shift = targetFirstStarX - starHooks[0].centerX;
+  if (shift === 0) return;
+  for (var i = 0; i < starHooks.length; i++) {
+    starHooks[i].posX += shift;
+    starHooks[i].centerX += shift;
+  }
+  for (var i = 0; i < elements.length; i++) {
+    elements[i].posX += shift;
+  }
+  for (var i = 0; i < gridPositions.length; i++) {
+    gridPositions[i].positionX += shift;
+  }
+  drawClicky();
+}
+
 function animateStart() {
   gameSetup();
-  gameState = 'animateGameStart';
+  gameState = 'starting';
   hookAlpha = 0;
 
-  // character starts on platform
+  positionFirstStar();
+
+  // character starts on platform (menu position — center of screen)
   var hoverY = platform.posY + platform.hover;
   character.centerX = platform.posX + platform.width / 2;
   character.centerY = hoverY + 26 - character.size / 2;
 
-  start.charStartX = character.centerX;
-  start.charStartY = character.centerY;
   start.logoStartX = logo.posX;
   start.platformStartX = platform.posX;
 
-  // Camera starts offset +240 (stars off to the right), animates to 0 (first star centered)
-  var firstStarOffset = starHooks.length > 0 ? -(starHooks[0].centerX - canvas.width / 2) : 0;
-  start.cameraStartX = firstStarOffset + 240;
-  start.targetCameraX = firstStarOffset;
-
-  // Calculate parallax factor so platform ends up near left edge (20px margin)
-  // Final platform screen X = platformStartX + targetCameraX * parallax = targetScreenX
-  var targetScreenX = 160;
-  if (start.targetCameraX !== 0) {
-    start.platformParallax = (targetScreenX - start.platformStartX) / start.targetCameraX;
-  } else {
-    start.platformParallax = 0.6;
-  }
-
-  // character walk target: right edge of platform
-  start.charEdgeX = platform.posX + platform.width - character.size / 2 - 8;
+  // Camera: starts on platform (0), pans to center first star
+  start.cameraStartX = 0;
+  start.targetCameraX = -(starHooks[0].centerX - canvas.width / 2);
 
   start.state = 1;
   start.progress = 0;
@@ -49,16 +54,16 @@ function drawExitingPlatform(context) {
   platform.time += 0.016 * dt;
 
   var platScreenX = start.platformStartX + camera.x * start.platformParallax;
-  // Off screen left — stop drawing permanently
-  if (platScreenX + platform.width < -100) {
+  var platScreenY = platform.posY + platform.hover + camera.y * start.platformParallax;
+  // Off screen — stop drawing permanently
+  if (platScreenX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
     return;
   }
-  var hoverY = platform.posY + platform.hover;
-  drawFloatingRocks(context, hoverY, 0, platScreenX);
-  context.drawImage(platform.canvas, platScreenX, hoverY);
+  drawFloatingRocks(context, platScreenY, 0, platScreenX);
+  context.drawImage(platform.canvas, platScreenX, platScreenY);
   var fireCx = platScreenX + platform.width * 0.3;
-  drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
+  drawCampfireFlames(context, fireCx, platScreenY + 32, platform.time, 1.6);
 }
 
 var start = {
@@ -66,9 +71,6 @@ var start = {
   progress: 0,
   logoAlpha: 1,
   logoStartX: 0,
-  charStartX: 0,
-  charStartY: 0,
-  charEdgeX: 0,
   cameraStartX: 0,
   targetCameraX: 0,
   platformStartX: 0,
@@ -91,8 +93,8 @@ function updateStart() {
   platform.time += 0.016 * dt;
 
   //----
-  // State 1: Camera pans to center first star. Platform + logo slide left with parallax.
-  //          Stars fade in from the right. Character stays on platform.
+  // State 1: Camera pans from platform (menu) to center first star.
+  //          Stars fade in. Platform stays in place. Logo fades out.
   if (start.state === 1) {
     start.progress += 0.004 * dt;
     if (start.progress > 1) start.progress = 1;
@@ -101,43 +103,41 @@ function updateStart() {
     var t = start.progress;
     var ease = (1 - Math.cos(t * Math.PI)) / 2;
 
-    // pan camera toward first star
+    // pan camera from platform toward first star
     var prevCamX = camera.x;
     camera.x = start.cameraStartX + (start.targetCameraX - start.cameraStartX) * ease;
     camera.vx = camera.x - prevCamX;
     camera.scrollX += camera.vx;
 
-    // character stays on platform surface — slides with platform parallax
-    var platOffsetX = camera.x * start.platformParallax;
+    // Platform world position + camera offset
+    var platScreenX = platform.posX + camera.x;
     var hoverY = platform.posY + platform.hover;
-    character.centerX = start.charStartX + platOffsetX;
+
+    // Character stays on platform surface
+    character.centerX = platScreenX + platform.width / 2;
     character.centerY = hoverY + 26 - character.size / 2;
 
-    // fade out logo with parallax
+    // Fade out logo — drifts slightly less than camera (background feel)
     start.logoAlpha = Math.max(0, 1 - ease * 2);
     if (start.logoAlpha > 0) {
       context.save();
       context.globalAlpha = start.logoAlpha;
-      // logo drifts left faster than camera (behind everything)
-      var logoX = start.logoStartX + camera.x * 0.3;
+      var logoX = start.logoStartX + camera.x * 0.5;
       context.drawImage(logo.canvas, logoX, logo.posY);
       context.restore();
     }
 
-    // draw platform with foreground parallax (slides left with character)
-    context.drawImage(platform.canvas, start.platformStartX + platOffsetX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, start.platformStartX + platOffsetX);
-    var fireCx = (start.platformStartX + platOffsetX) + platform.width * 0.3;
+    // Draw platform (stationary)
+    context.drawImage(platform.canvas, platScreenX, hoverY);
+    drawFloatingRocks(context, hoverY, 0, platScreenX);
+    var fireCx = platScreenX + platform.width * 0.3;
     drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
 
-    // draw character on the sliding platform
+    // Draw character on the platform
     drawCharacter(context);
 
-    // fade in stars
-    if (start.progress > 0.2 && hookAlpha < 1) {
-      hookAlpha += 0.012 * dt;
-      if (hookAlpha > 1) hookAlpha = 1;
-    }
+    // Stars fade in as camera pans toward them
+    hookAlpha = ease;
 
     if (start.progress >= 1) {
       start.state = 2;
@@ -157,19 +157,19 @@ function updateStart() {
     // easeInOut
     var ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-    // walk from center to right edge
-    var platOffsetX = camera.x * start.platformParallax;
-    var walkStartX = start.charStartX + platOffsetX;
-    var walkEndX = start.charEdgeX + platOffsetX;
+    // Platform world position + camera offset
+    var platScreenX = platform.posX + camera.x;
+    var walkStartX = platScreenX + platform.width / 2;
+    var walkEndX = platScreenX + platform.width - character.size / 2 - 8;
     character.centerX = walkStartX + (walkEndX - walkStartX) * ease;
 
     var hoverY = platform.posY + platform.hover;
     character.centerY = hoverY + 26 - character.size / 2;
 
     // keep drawing platform
-    context.drawImage(platform.canvas, start.platformStartX + platOffsetX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, start.platformStartX + platOffsetX);
-    var fireCx = (start.platformStartX + platOffsetX) + platform.width * 0.3;
+    context.drawImage(platform.canvas, platScreenX, hoverY);
+    drawFloatingRocks(context, hoverY, 0, platScreenX);
+    var fireCx = platScreenX + platform.width * 0.3;
     drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
 
     drawCharacter(context);
@@ -179,7 +179,6 @@ function updateStart() {
       start.progress = 0;
       start.hopVY = -4;
       start.hopping = true;
-      // Save the screen-space X at hop start for drift calculation
       start.hopStartX = character.centerX;
     }
   }
@@ -194,20 +193,23 @@ function updateStart() {
       character.centerY += start.hopVY * dt;
       character.centerX += 1.5 * dt;
 
-      // draw platform (still visible)
-      var platOffsetX = camera.x * start.platformParallax;
+      // draw platform with camera offset
+      var platScreenX = platform.posX + camera.x;
       var hoverY = platform.posY + platform.hover;
-      context.drawImage(platform.canvas, start.platformStartX + platOffsetX, hoverY);
-      drawFloatingRocks(context, hoverY, 0, start.platformStartX + platOffsetX);
-      var fireCx = (start.platformStartX + platOffsetX) + platform.width * 0.3;
+      context.drawImage(platform.canvas, platScreenX, hoverY);
+      drawFloatingRocks(context, hoverY, 0, platScreenX);
+      var fireCx = platScreenX + platform.width * 0.3;
       drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
 
       drawCharacter(context);
 
-      // After hop peaks and starts falling, convert to world coords and start game
+      // After hop peaks and starts falling, switch to gameplay
       if (start.hopVY > 0.5) {
         start.hopping = false;
         start.platformExiting = true;
+        // Switch platform to 0.6 parallax so it drifts off gradually during gameplay
+        start.platformParallax = 0.6;
+        start.platformStartX = platScreenX - camera.x * 0.6;
         // Convert screen position to world position
         character.centerX = character.centerX - camera.x;
         physics.vx = 1.5;

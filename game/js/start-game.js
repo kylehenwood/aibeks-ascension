@@ -9,5 +9,6 @@ function startGame() {
   infiniteGen.startX = starHooks[0].centerX;
   infiniteGen.maxDistance = 0;
 
+  starImmunity.immune = true;
   changeHook(0);
 }

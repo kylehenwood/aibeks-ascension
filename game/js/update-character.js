@@ -55,7 +55,7 @@ function characterReset() {
 
 // when character is not attached, move it based on velocity and gravity
 function characterFalling(context) {
-  if (gameState === 'animateGameStart') {
+  if (gameState === 'starting') {
     return;
   }
   // Always apply velocity; only accumulate gravity when enabled

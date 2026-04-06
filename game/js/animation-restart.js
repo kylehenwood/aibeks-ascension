@@ -8,7 +8,6 @@ function restartGame() {
   restartProgress = 0;
   restartGameReset = false;
   restartFalling = false;
-  start.platformExiting = false; // don't redraw platform after restart
   camera.target = null;
   detach();
 }
@@ -61,6 +60,7 @@ function restartAnimation() {
     restartGameReset = true;
     clearVariables();
     gameSetup();
+    positionFirstStar();
     var firstStar = starHooks[0];
     camera.x = -(firstStar.centerX - canvas.width / 2);
     camera.vx = 0;
@@ -79,8 +79,8 @@ function restartAnimation() {
     camera.vy = 0;
     camera.y = 0;
 
-    // Position character 240px left of first star, above screen
-    character.centerX = starHooks[0].centerX - 240;
+    // Position character 320px left of first star, above screen
+    character.centerX = starHooks[0].centerX - 320;
     character.centerY = -character.size;
     physics.vx = 0;
     physics.vy = 0;

@@ -124,13 +124,14 @@ function runGame(timestamp) {
       drawCharacter(gamePanel.context);
     }
     drawForeground(canvas.context,true);
+    drawExitingPlatform(canvas.context);
     if (!restartFalling) {
       drawGameOverlay(canvas.context,'fade-out');
     }
     break;
 
 
-    case 'animateGameStart':
+    case 'starting':
     updateGame();
     //draw
     drawBackground();
@@ -157,6 +158,7 @@ function runGame(timestamp) {
     canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
     canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,true);
+    drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
     canvas.context.drawImage(gameOver.canvas,0,0);
     break;
@@ -167,7 +169,8 @@ function runGame(timestamp) {
     detach();
     updateGameOverAnimation();
     updateGame();
-    updateCamera();
+    // Accumulate horizontal scroll for background parallax (no vertical — bob is cosmetic)
+    camera.scrollX += camera.vx * dt;
     //draw
     drawBackground();
     var gpx = camera.x * parallax.gamePanel;
@@ -175,6 +178,7 @@ function runGame(timestamp) {
     canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
     canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
     drawForeground(canvas.context,true);
+    drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
     drawCharacter(canvas.context);
     break;

@@ -47,6 +47,7 @@ function createDebugPanel() {
         '<div class="debug-panel__actions">' +
           '<button id="debug-goto-menu" class="debug-panel__btn">Menu</button>' +
           '<button id="debug-goto-play" class="debug-panel__btn">Play</button>' +
+          '<button id="debug-animate-start" class="debug-panel__btn">Animate Start</button>' +
         '</div>' +
         '<div class="debug-panel__state">' +
           'State: <span id="debug-state-display">--</span>' +
@@ -115,10 +116,10 @@ function createDebugPanel() {
 
     '</div>';
 
-  document.body.appendChild(panel);
+  document.body.insertBefore(panel, document.body.firstChild);
   debugPanel.el = panel;
 
-  // Shift the page layout to make room
+  // Enable sidebar layout
   document.body.classList.add('layout--debug');
 
   // Wire up collapsible sections
@@ -365,6 +366,17 @@ function initDebugControls() {
     physics.vy = 0;
     gameSetup();
     startGame();
+  });
+
+  document.getElementById('debug-animate-start').addEventListener('click', function() {
+    detach();
+    clearVariables();
+    camera.x = 0;
+    camera.y = 0;
+    physics.vx = 0;
+    physics.vy = 0;
+    setupMenu();
+    animateStart();
   });
 
   // --- Sliders ---

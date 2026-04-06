@@ -17,9 +17,12 @@ function mouseTestSetup() {
 
   // add event listener for clicks on canvas.
   elem.addEventListener('click', function(event) {
-    // Temporary fix
-    var mouseX = event.pageX - elem.left;
-    var mouseY = event.pageY - elem.top;
+    // Map screen pixels to canvas coordinates (accounts for CSS scaling)
+    var rect = elem.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mouseX = (event.pageX - rect.left) * scaleX;
+    var mouseY = (event.pageY - rect.top) * scaleY;
 
     // every click, check to see if click is over any of the elements in the elements array.
     // if yes, get the index of that element, and set the current hook to that

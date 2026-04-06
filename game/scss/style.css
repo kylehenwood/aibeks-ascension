@@ -635,8 +635,8 @@ html {
 .layout {
   position: relative;
   height: 100%;
-  background: #333333;
-  padding: 48px 0; }
+  background: #222;
+  padding: 0; }
 
 .layout--sidebar {
   padding-right: 360px !important; }
@@ -655,12 +655,7 @@ html {
   top: 50%;
   left: 0;
   width: 100%;
-  transform: translateY(-50%);
-  -webkit-transition: all 200ms linear;
-  -moz-transition: all 200ms linear;
-  -ms-transition: all 200ms linear;
-  -o-transition: all 200ms linear;
-  transition: all 200ms linear; }
+  transform: translateY(-50%); }
 
 .layout__footer {
   position: fixed;
@@ -805,14 +800,9 @@ html {
   margin: 0 auto;
   width: 800px;
   height: 700px;
-  background: #333;
+  background: #0e0e2b;
   /*border: 1px solid #000;*/
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  -webkit-transition: all 200ms linear;
-  -moz-transition: all 200ms linear;
-  -ms-transition: all 200ms linear;
-  -o-transition: all 200ms linear;
-  transition: all 200ms linear; }
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 
 .viewport--iphone4 {
   width: 1200px;
@@ -861,7 +851,7 @@ html {
   position: relative;
   height: 100%;
   width: 100%;
-  background-color: #2b4952; }
+  background-color: #0e0e2b; }
 
 .level-layout__background {
   position: absolute;
