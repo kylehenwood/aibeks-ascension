@@ -79,21 +79,15 @@ function restartAnimation() {
     camera.vy = 0;
     camera.y = 0;
 
-    // Position character 240px left of first star (screen coords), above screen
-    character.centerX = starHooks[0].centerX + camera.x - 240;
+    // Position character 240px left of first star (world coords), above camera
+    character.centerX = starHooks[0].centerX - 240;
     character.centerY = -character.size;
     physics.vx = 0;
     physics.vy = 0;
   }
 
-  // Character falling phase — apply gravity and wait for horizontal alignment
+  // Character falling phase — gravity handled by characterFalling() in updateGame()
   if (restartFalling) {
-    physics.vy += physics.GRAVITY * dt;
-    if (physics.vy > physics.TERMINAL_VELOCITY) {
-      physics.vy = physics.TERMINAL_VELOCITY;
-    }
-    character.centerY += physics.vy * dt;
-
     // When character is 40px above the star's Y level, grapple
     if (character.centerY >= starHooks[0].centerY - 40) {
       restartFalling = false;

@@ -117,12 +117,7 @@ function runGame(timestamp) {
     var gpy = camera.y * parallax.gamePanel;
     canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
     canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    if (restartFalling) {
-      // Character falling in — draw on main canvas (screen coords)
-      drawCharacter(canvas.context);
-    } else {
-      drawCharacter(gamePanel.context);
-    }
+    drawCharacter(gamePanel.context);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     if (!restartFalling) {

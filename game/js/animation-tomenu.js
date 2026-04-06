@@ -6,7 +6,7 @@ function backToMenu() {
   menuAlpha = 0;
 
   logo.alpha = 0;
-  logo.posX = (canvas.width/2)-(logo.width/2);
+  logo.posX = (canvas.width/2)-(logo.width/2) - camera.scrollX * parallax.logo;
 
   playButton.alpha = 0;
 
