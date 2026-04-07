@@ -69,7 +69,7 @@ var character = {
   currentPosX: 0,
   currentPosY: 0,
   swinging: false,
-  grappelDelay:320, // ms (this should change based on the distance the character is from the hook)
+  grappelDelay:160, // ms (this should change based on the distance the character is from the hook)
   centerX: 0,
   centerY: 0,
 }

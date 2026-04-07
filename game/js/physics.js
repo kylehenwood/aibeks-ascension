@@ -9,21 +9,21 @@ var physics = {
   vy: 0,
 
   // Tuning constants
-  GRAVITY: 0.35,
-  TERMINAL_VELOCITY: 14,
-  ROPE_SEGMENTS: 6,
+  GRAVITY: 0.4,
+  TERMINAL_VELOCITY: 15,
+  ROPE_SEGMENTS: 8,
   ROPE_ITERATIONS: 3,
-  DAMPING: 0.999,
-  ROPE_MIN_LENGTH: 0,      // minimum total rope length in pixels (0 = no minimum)
-  RATCHET: 1.0,            // how aggressively the rope shortens when character is close (0 = off, 1 = instant)
-  RATCHET_MAX: 0.5,        // max ratchet shortening as fraction of initial rope length (0 = no shortening, 1 = can shorten to zero)
-  GRAPPLE_EASE: 2.5,       // easing power for grapple animation (1 = linear, >1 = accelerates)
-  ELASTICITY: 0.8,         // rope stiffness (0 = fully elastic/stretchy, 1 = rigid). Stretches more with momentum
-  RIGIDITY: 0,             // straightens the rope (0 = fully flexible, 1 = perfectly straight beam)
-  RETRACT_PERCENT: 0.15,  // how much the rope shortens on connect (0-1)
-  RETRACT_SPEED: 0.03,    // lerp speed per frame toward target length
-  SPARKLE_RATE: 0.04,     // chance per rope point per frame to emit a sparkle (0 = off, 1 = every frame)
-  SPARKLE_LIFE: 60,       // how many frames sparkles last before fully fading
+  DAMPING: 1,
+  ROPE_MIN_LENGTH: 80,     // minimum total rope length in pixels (0 = no minimum)
+  RATCHET: 0.7,            // how aggressively the rope shortens when character is close (0 = off, 1 = instant)
+  RATCHET_MAX: 1,          // max ratchet shortening as fraction of initial rope length (0 = no shortening, 1 = can shorten to zero)
+  GRAPPLE_EASE: 2,         // easing power for grapple animation (1 = linear, >1 = accelerates)
+  ELASTICITY: 1,           // rope stiffness (0 = fully elastic/stretchy, 1 = rigid). Stretches more with momentum
+  RIGIDITY: 0.25,          // straightens the rope (0 = fully flexible, 1 = perfectly straight beam)
+  RETRACT_PERCENT: 0.1,   // how much the rope shortens on connect (0-1)
+  RETRACT_SPEED: 0.15,    // lerp speed per frame toward target length
+  SPARKLE_RATE: 0.1,      // chance per rope point per frame to emit a sparkle (0 = off, 1 = every frame)
+  SPARKLE_LIFE: 70,       // how many frames sparkles last before fully fading
 
   // Verlet rope state — array of {x, y, ox, oy}
   rope: [],
