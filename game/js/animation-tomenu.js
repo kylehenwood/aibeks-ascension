@@ -2,19 +2,16 @@
 var menuFirstLoad = true;
 
 var menuCamYStart = 0;
+var menuPanTargetY = 0;
 
 function backToMenu() {
   gameState = 'menuAnimation';
   menuAlpha = 0;
-  menuCamYStart = camera.y;
 
   logo.alpha = 0;
   logo.posX = (canvas.width/2)-(logo.width/2);
 
   playButton.alpha = 0;
-
-  // Character stays at gameplay position during sweep (scrolls out with old content)
-  // It gets hidden at the midpoint swap
   menuGravity = 0;
 
   // Clean up exiting platform from gameplay (surface + draw flag)
@@ -36,12 +33,26 @@ function backToMenu() {
     menuEntryProgress = 0;
     menuStage = 5; // intro pan stage
   } else {
-    // Returning from gameplay — single sine sweep to new platform below
+    // Returning from gameplay — pan camera straight down to a new platform
     camera.target = null;
+    detach();
+
+    // Snap camera.x to 0 so the pan is purely vertical
+    camera.x = 0;
+    camera.vx = 0;
+
+    // Place platform centered on screen, far below in world Y.
+    // Camera pans down (negative camera.y) to reveal it.
+    platform.posX = (canvas.width / 2) - (platform.width / 2);
+    var menuPosY = (canvas.height / 2) - (platform.height / 2) + 120;
+    var panDist = canvas.height * 1.2;
+    platform.posY = menuPosY + panDist; // off-screen below at camera.y = 0
+
+    menuCamYStart = camera.y;
+    menuPanTargetY = -panDist;
     menuPanProgress = 0;
     menuPanReset = false;
-    detach();
-    menuStage = 10; // sweep stage
+    menuStage = 10;
   }
 }
 
@@ -59,86 +70,61 @@ var charFallVY = 0;
 // once complete it transitions to gameMenu state.
 function animateToMenu() {
 
-  // ::Stage 10 — single sine-curve sweep (returning from gameplay)
+  // ::Stage 10 — pan camera down to new platform (returning from gameplay)
   //
-  // Camera pans down using a sine curve (slow → fast → slow).
-  // Old content exits upward. At the midpoint (peak speed, content off screen),
-  // a new platform + title are created below. The sweep continues seamlessly —
-  // new content enters from below and settles at camera.y = 0.
+  // Platform is placed far below the screen. Camera pans down (camera.y goes
+  // negative) so old game content scrolls up and off-screen while the platform
+  // rises into view from below. No midpoint swap — one continuous motion.
   if (menuStage === 10) {
-    var clearance = canvas.height * 1.5;
-    var totalDistance = clearance * 2;
-
     menuPanProgress += (1 / 180) * dt; // ~3 seconds at 60fps
     if (menuPanProgress > 1) menuPanProgress = 1;
 
-    // Single sine curve: slow → fast at midpoint → slow
+    // Sine ease: slow → fast → slow
     var ease = (1 - Math.cos(menuPanProgress * Math.PI)) / 2;
 
     var prevCamY = camera.y;
 
-    if (!menuPanReset) {
-      // First half: pan down from start, old content exits up
-      camera.y = menuCamYStart - ease * totalDistance;
-    } else {
-      // Second half: continue from +clearance down to 0
-      var t = (ease - 0.5) * 2; // 0→1 over second half
-      camera.y = clearance * (1 - t);
-    }
+    // Pan camera.y straight down to bring platform into view
+    camera.y = menuCamYStart + (menuPanTargetY - menuCamYStart) * ease;
 
     camera.vy = camera.y - prevCamY;
     camera.scrollY += camera.vy;
 
-    // Swap at midpoint — content is off screen, camera moving fastest
-    if (!menuPanReset && menuPanProgress >= 0.5) {
+    // Clean up old game data once it has scrolled off-screen
+    if (!menuPanReset && menuPanProgress >= 0.4) {
       menuPanReset = true;
-
       var savedScrollX = camera.scrollX;
       var savedScrollY = camera.scrollY;
-
       clearVariables();
-      gameSetup();
-
-      // Reset camera.x to 0 — menu elements draw in screen space
-      camera.x = 0;
-      camera.vx = 0;
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
-
-      // Position platform and logo centered on screen
-      platform.posX = (canvas.width / 2) - (platform.width / 2);
-      logo.posX = (canvas.width / 2) - (logo.width / 2);
-
-      // New content at world Y ~0. Camera at +clearance puts it below viewport.
-      camera.y = clearance;
-
-      // Character removed — will respawn above camera after sweep
+      // Hide character until pan completes
       character.centerX = -9999;
       character.centerY = -9999;
-      return;
     }
 
     // Logo fades in during second half
-    if (menuPanReset) {
-      var fadeProgress = (menuPanProgress - 0.5) * 2; // 0→1 during second half
+    if (menuPanProgress > 0.5) {
+      var fadeProgress = (menuPanProgress - 0.5) * 2;
       logo.alpha = Math.min(fadeProgress * 1.5, 1);
       menuAlpha = logo.alpha;
 
       var context = canvas.context;
       context.save();
       context.globalAlpha = logo.alpha;
-      context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY + camera.y * 1.1);
+      context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y);
       context.restore();
     }
 
-    // Sweep complete — spawn character above camera to fall
+    // Pan complete — snap to final menu positions
     if (menuPanProgress >= 1) {
+      platform.posY = (canvas.height / 2) - (platform.height / 2) + 120;
       camera.y = 0;
       camera.vy = 0;
       logo.alpha = 1;
       menuAlpha = 1;
 
-      // Character spawns above the camera, will fall onto platform
+      // Character spawns above camera, will fall onto platform
       character.centerX = platform.posX + platform.width / 2;
       character.centerY = -character.size;
       charFallVY = 0;

@@ -54,6 +54,8 @@ function drawExitingPlatform(context) {
   else { platform.hover += 0.024 * dt; }
   platform.time += 0.016 * dt;
 
+  var exitParallax = start.platformParallax;
+
   // Register collision surface when platform starts exiting
   if (!start.platformSurface) {
     start.platformSurface = addSurface({
@@ -61,7 +63,7 @@ function drawExitingPlatform(context) {
       y: platform.posY + platform.hover + 26,
       width: platform.width,
       height: 10,
-      parallax: start.platformParallax,
+      parallax: exitParallax,
       topOnly: true,
       tag: 'platform'
     });
@@ -71,10 +73,12 @@ function drawExitingPlatform(context) {
   start.platformSurface.x = start.platformStartX;
   start.platformSurface.y = platform.posY + platform.hover + 26;
 
-  var platScreenX = start.platformStartX + camera.x * start.platformParallax;
-  var platScreenY = platform.posY + platform.hover + camera.y * start.platformParallax;
+  var platScreenX = start.platformStartX + camera.x * exitParallax;
+  var platScreenY = platform.posY + platform.hover + camera.y * exitParallax;
   // Off screen — stop drawing and remove collision surface
-  if (platScreenX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
+  // Use camera.x directly (1:1) for the exit check so wide canvases don't keep it alive too long
+  var checkX = start.platformStartX + camera.x;
+  if (checkX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
     removeSurface(start.platformSurface);
     start.platformSurface = null;
