@@ -15,7 +15,7 @@ var pauseMenuButton = {
 function createPauseMenuButton(){
   var button = pauseMenuButton;
   button.posX = 24;
-  button.posY = (canvas.height)-((button.height+24)*3);
+  button.posY = (camera.height)-((button.height+24)*3);
 
   button.canvas = document.createElement('canvas');
   button.canvas.width = button.width;
@@ -50,7 +50,7 @@ function createPauseRestartButton(){
   var button = pauseRestartButton;
 
   button.posX = 24;
-  button.posY = (canvas.height)-((button.height+24)*2);
+  button.posY = (camera.height)-((button.height+24)*2);
 
   button.canvas = document.createElement('canvas');
   button.canvas.width = button.width;
@@ -86,7 +86,7 @@ function createPauseResumeButton(){
     var button = pauseResumeButton;
 
     button.posX = 24;
-    button.posY = (canvas.height)-((button.height+24)*1);
+    button.posY = (camera.height)-((button.height+24)*1);
 
     button.canvas = document.createElement('canvas');
     button.canvas.width = button.width;

@@ -11,8 +11,8 @@ var playButton = {
   progress: 0
 }
 function createPlayButton(data){
-  playButton.posX = (canvas.width/2)-(240/2),
-  playButton.posY = (canvas.height/2)+240,
+  playButton.posX = (camera.width/2)-(240/2),
+  playButton.posY = (camera.height/2)+240,
 
   playButton.canvas = document.createElement('canvas');
   playButton.canvas.width = data.width;
@@ -79,7 +79,7 @@ var modeSelect = {
 
 function createModeSelect() {
   modeSelect.canvas = document.createElement('canvas');
-  modeSelect.canvas.width = canvas.width;
+  modeSelect.canvas.width = camera.width;
   modeSelect.canvas.height = 120;
   modeSelect.context = modeSelect.canvas.getContext('2d');
 }
@@ -157,7 +157,7 @@ var themeButton = {
   context: null
 }
 function createThemeButton(data){
-  themeButton.posX = canvas.width-88,
+  themeButton.posX = camera.width-88,
   themeButton.posY = 24,
   themeButton.canvas = document.createElement('canvas');
   themeButton.canvas.width = data.width;
@@ -176,8 +176,8 @@ var soundButton = {
   context: null
 }
 function createSoundButton(data){
-  soundButton.posX = canvas.width-88,
-  soundButton.posY = canvas.height-88,
+  soundButton.posX = camera.width-88,
+  soundButton.posY = camera.height-88,
   soundButton.canvas = document.createElement('canvas');
   soundButton.canvas.width = data.width;
   soundButton.canvas.height = data.height;
@@ -234,8 +234,8 @@ function createLogo() {
   logo.context = logo.canvas.getContext('2d');
   logo.width = width;
   logo.height = height;
-  logo.posX = (canvas.width/2)-(logo.width/2);
-  logo.posY = (canvas.height/2)-(logo.height/2)-120;
+  logo.posX = (camera.width/2)-(logo.width/2);
+  logo.posY = (camera.height/2)-(logo.height/2)-120;
 
   // load SVG as image
   var img = new Image();
@@ -282,8 +282,8 @@ function createPlatform() {
   platform.context.drawImage(fullCanvas, 0, 0, width, height);
   platform.width = width;
   platform.height = height;
-  platform.posX = (canvas.width/2)-(platform.width/2);
-  platform.posY = (canvas.height/2)-(platform.height/2)+120;
+  platform.posX = (camera.width/2)-(platform.width/2);
+  platform.posY = (camera.height/2)-(platform.height/2)+120;
 
   // create floating rocks — orbit around platform center
   var cx = width / 2;

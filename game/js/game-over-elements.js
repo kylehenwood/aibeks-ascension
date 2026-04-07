@@ -13,7 +13,7 @@ function createRestartButton(data){
   //restartButton.posX = (canvas.width/2)-(240/2);
 
   restartButton.posX = 24;
-  restartButton.posY = (canvas.height-introButton.height)-24;
+  restartButton.posY = (camera.height-introButton.height)-24;
 
   restartButton.canvas = document.createElement('canvas');
   restartButton.canvas.width = restartButton.width;
@@ -49,8 +49,8 @@ function createIntroButton(){
   //introButton.posX = (canvas.width/2)-(240/2),
   //introButton.posY = (canvas.height/2)+40,
 
-  introButton.posX = (canvas.width-introButton.width)-24;
-  introButton.posY = (canvas.height-introButton.height)-24;
+  introButton.posX = (camera.width-introButton.width)-24;
+  introButton.posY = (camera.height-introButton.height)-24;
 
 
   introButton.canvas = document.createElement('canvas');

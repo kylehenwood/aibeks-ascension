@@ -24,5 +24,5 @@ function drawGameOverlay(context,state) {
   }
   //console.log(state+','+gameOverlay.alpha);
   context.fillStyle = 'rgba(000,000,000,'+gameOverlay.alpha+')';
-  context.fillRect(0,0,canvas.width,canvas.height);
+  context.fillRect(0,0,camera.width,camera.height);
 }

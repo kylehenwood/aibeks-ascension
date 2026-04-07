@@ -29,8 +29,8 @@ function updateIntro() {
     intro.val+= 1;
   }
 
-  character.centerX = canvas.width/2;
-  character.centerY = canvas.height/2;
+  character.centerX = camera.width/2;
+  character.centerY = camera.height/2;
 
   if (camera.y > 0) {
     camera.vy = -0.5;

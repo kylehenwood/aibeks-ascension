@@ -10,9 +10,9 @@ var cloudParticles = [];
 function isInCloud(screenX, screenY) {
   // Check each cloud layer
   var layers = [
-    { clouds: backgroundClouds, baseY: (canvas.height - 200) + camera.y * parallax.cloud1 },
-    { clouds: smallClouds,      baseY: (canvas.height - 200) + camera.y * parallax.cloud2 },
-    { clouds: tinyClouds,       baseY: (canvas.height - 200) + camera.y * parallax.cloud3 }
+    { clouds: backgroundClouds, baseY: (camera.height - 200) + camera.y * parallax.cloud1 },
+    { clouds: smallClouds,      baseY: (camera.height - 200) + camera.y * parallax.cloud2 },
+    { clouds: tinyClouds,       baseY: (camera.height - 200) + camera.y * parallax.cloud3 }
   ];
 
   for (var l = 0; l < layers.length; l++) {
@@ -77,13 +77,13 @@ function updateCloudParticles(context) {
 
 function setupForeground() {
   createBackgroundCloud(0);
-  createBackgroundCloud(canvas.width);
+  createBackgroundCloud(camera.width);
 
   createSmallCloud(0);
-  createSmallCloud(canvas.width);
+  createSmallCloud(camera.width);
 
   createTinyCloud(0);
-  createTinyCloud(canvas.width);
+  createTinyCloud(camera.width);
 }
 
 // HOW TO MAKE THE CLOUDS ENDLESS???
@@ -119,13 +119,13 @@ function drawForeground(context,isAnimating) {
     x3 -= 0.3*dt;
   }
 
-  var backgroundCloudY = (canvas.height-200)+y1;
+  var backgroundCloudY = (camera.height-200)+y1;
   cloudMove(context,backgroundClouds[0],backgroundClouds[1],x1,backgroundCloudY,mouseOffX1,mouseOffY1);
 
-  var smallCloudY = (canvas.height-200)+y2;
+  var smallCloudY = (camera.height-200)+y2;
   cloudMove(context,smallClouds[0],smallClouds[1],x2,smallCloudY,mouseOffX2,mouseOffY2);
 
-  var tinyCloudY = (canvas.height-200)+y3;
+  var tinyCloudY = (camera.height-200)+y3;
   cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY,mouseOffX3,mouseOffY3);
 
   // Cloud interaction particles
@@ -141,17 +141,17 @@ function cloudMove(context,cloudLayer,cloudOther,posX,posY,drawOffX,drawOffY) {
   cloudLayer.posX += posX;
   cloudOther.posX += posX;
 
-  if (cloudLayer.posX < -canvas.width) {
-    cloudLayer.posX = cloudOther.posX+canvas.width;
+  if (cloudLayer.posX < -camera.width) {
+    cloudLayer.posX = cloudOther.posX+camera.width;
   }
-  if (cloudLayer.posX > canvas.width) {
-    cloudLayer.posX = cloudOther.posX-canvas.width;
+  if (cloudLayer.posX > camera.width) {
+    cloudLayer.posX = cloudOther.posX-camera.width;
   }
-  if (cloudOther.posX < -canvas.width) {
-    cloudOther.posX = cloudLayer.posX+canvas.width;
+  if (cloudOther.posX < -camera.width) {
+    cloudOther.posX = cloudLayer.posX+camera.width;
   }
-  if (cloudOther.posX > canvas.width) {
-    cloudOther.posX = cloudLayer.posX-canvas.width;
+  if (cloudOther.posX > camera.width) {
+    cloudOther.posX = cloudLayer.posX-camera.width;
   }
   var ox = drawOffX || 0;
   var oy = drawOffY || 0;
@@ -172,7 +172,7 @@ function createBackgroundCloud(posX) {
   // 400 = (400-(120*2)) = 160
 
   backgroundCloud.canvas = document.createElement('canvas');
-  backgroundCloud.canvas.width = canvas.width;
+  backgroundCloud.canvas.width = camera.width;
   backgroundCloud.canvas.height = 400;
   backgroundCloud.context = backgroundCloud.canvas.getContext('2d');
 
@@ -202,7 +202,7 @@ function createSmallCloud(posX) {
   }
 
   smallCloud.canvas = document.createElement('canvas');
-  smallCloud.canvas.width = canvas.width;
+  smallCloud.canvas.width = camera.width;
   smallCloud.canvas.height = 400;
   smallCloud.context = smallCloud.canvas.getContext('2d');
 
@@ -218,7 +218,7 @@ function createSmallCloud(posX) {
 
   var canvasWidth = smallCloud.canvas.width;
 
-  while (width < canvas.width-24) {
+  while (width < camera.width-24) {
     var cloudPosY = 8*rand(0,bandCalc)+cloudBandSpace;
     var cloudWidth = 8*rand(8,20);
     var cloudHeight = 8*rand(4,8);
@@ -245,7 +245,7 @@ function createTinyCloud(posX) {
   }
 
   tinyCloud.canvas = document.createElement('canvas');
-  tinyCloud.canvas.width = canvas.width;
+  tinyCloud.canvas.width = camera.width;
   tinyCloud.canvas.height = 400;
   tinyCloud.context = tinyCloud.canvas.getContext('2d');
 
@@ -261,7 +261,7 @@ function createTinyCloud(posX) {
 
   var canvasWidth = tinyCloud.canvas.width;
 
-  while (width < canvas.width-24) {
+  while (width < camera.width-24) {
     var cloudPosY = 8*rand(0,bandCalc)+cloudBandSpace;
     var cloudWidth = 8*rand(3,6);
     var cloudHeight = 24;

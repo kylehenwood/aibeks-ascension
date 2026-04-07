@@ -12,7 +12,9 @@ var camera = {
   target: null,    // 'hook' | 'character' | 'position' | null (manual/animation)
   targetX: 0,      // where camera wants to be
   targetY: 0,
-  ease: 16         // frames to reach target
+  ease: 16,        // frames to reach target
+  width: 1200,     // fixed gameplay viewport width
+  height: 640      // fixed gameplay viewport height
 };
 
 function cameraFollowHook() { camera.target = 'hook'; }
@@ -111,7 +113,7 @@ function runGame(timestamp) {
     drawPauseIcon();
 
     // game over condition
-    if (character.centerY-(character.size/2) > canvas.height) {
+    if (character.centerY-(character.size/2) > camera.height) {
       setupGameOverAnimation();
     }
     break;
@@ -228,10 +230,10 @@ function runGame(timestamp) {
 function updateCamera() {
   var gp = parallax.gamePanel;
   if (camera.target === 'hook' && selectedHook) {
-    camera.targetX = (selectedHook.posX - (canvas.width/2) + (selectedHook.size/2)) * -1 / gp;
+    camera.targetX = (selectedHook.posX - (camera.width/2) + (selectedHook.size/2)) * -1 / gp;
     camera.targetY = 0;
   } else if (camera.target === 'character') {
-    camera.targetX = (character.centerX - (canvas.width/2) + (character.size/2)) * -1 / gp;
+    camera.targetX = (character.centerX - (camera.width/2) + (character.size/2)) * -1 / gp;
     camera.targetY = 0;
   }
   // 'position' — targetX/targetY already set by cameraPanTo

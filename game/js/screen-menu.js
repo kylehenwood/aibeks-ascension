@@ -10,14 +10,14 @@ var menuElems = [];
 
 function setupMenu() {
   gameState = 'gameMenu';
-  character.centerX = canvas.width/2;
+  character.centerX = camera.width/2;
 }
 
 // create the pause overlay
 function createMenu() {
   gameMenu.canvas = document.createElement('canvas');
-  gameMenu.canvas.width = canvas.width;
-  gameMenu.canvas.height = canvas.height;
+  gameMenu.canvas.width = camera.width;
+  gameMenu.canvas.height = camera.height;
   gameMenu.context = gameMenu.canvas.getContext('2d');
 
   // intro elements
@@ -42,7 +42,7 @@ function updateMenu() {
   //context = canvas.context;
   var context = gameMenu.context;
 
-  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.clearRect(0, 0, camera.width, camera.height);
 
   // Position character on the platform surface
   var hoverY = platform.posY + platform.hover;

@@ -8,14 +8,14 @@ function updateGame() {
   // Infinite generation: spawn more stars when camera approaches the last star
   if (starHooks.length > 0) {
     var lastStarX = starHooks[starHooks.length - 1].posX;
-    var cameraRight = -camera.x + canvas.width;
-    if (gameState === 'playGame' && cameraRight > lastStarX - canvas.width * 2) {
+    var cameraRight = -camera.x + camera.width;
+    if (gameState === 'playGame' && cameraRight > lastStarX - camera.width * 2) {
       generateMoreStars();
     }
   }
 
   // World shift: keep canvas coordinates bounded when stars approach canvas edge
-  if (starHooks.length > 0 && starHooks[starHooks.length - 1].posX > infiniteGen.canvasWidth - canvas.width * 2) {
+  if (starHooks.length > 0 && starHooks[starHooks.length - 1].posX > infiniteGen.canvasWidth - camera.width * 2) {
     shiftWorld();
   }
 
@@ -27,8 +27,8 @@ function updateGame() {
 
   // Clear only visible area for performance on large canvases
   var viewLeft = Math.max(0, -camera.x - 200);
-  var viewRight = Math.min(gameCanvas.width, -camera.x + canvas.width + 200);
-  gameContext.clearRect(viewLeft, 0, viewRight - viewLeft, canvas.height);
+  var viewRight = Math.min(gameCanvas.width, -camera.x + camera.width + 200);
+  gameContext.clearRect(viewLeft, 0, viewRight - viewLeft, camera.height);
 
   // Update distance score (furthest X reached)
   if (character.centerX > infiniteGen.startX) {

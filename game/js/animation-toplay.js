@@ -28,13 +28,13 @@ function animateStart() {
   character.centerX = platform.posX + platform.width / 2;
   character.centerY = hoverY + 26 - character.size / 2;
 
-  logo.posX = (canvas.width / 2) - (logo.width / 2);
+  logo.posX = (camera.width / 2) - (logo.width / 2);
   start.logoStartX = logo.posX;
   start.platformStartX = platform.posX;
 
   // Camera: starts on platform (0), pans to center first star
   start.cameraStartX = 0;
-  start.targetCameraX = -(starHooks[0].centerX - canvas.width / 2);
+  start.targetCameraX = -(starHooks[0].centerX - camera.width / 2);
 
   start.state = 1;
   start.progress = 0;
@@ -78,7 +78,7 @@ function drawExitingPlatform(context) {
   // Off screen — stop drawing and remove collision surface
   // Use camera.x directly (1:1) for the exit check so wide canvases don't keep it alive too long
   var checkX = start.platformStartX + camera.x;
-  if (checkX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
+  if (checkX + platform.width < -100 || platScreenY > camera.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
     removeSurface(start.platformSurface);
     start.platformSurface = null;

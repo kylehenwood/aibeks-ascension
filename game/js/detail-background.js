@@ -14,17 +14,17 @@ function drawBackground() {
 
 function createStarPanel(density, size) {
   var panel = document.createElement('canvas');
-  panel.width = canvas.width;
-  panel.height = canvas.height;
+  panel.width = camera.width;
+  panel.height = camera.height;
   panel.context = panel.getContext('2d');
 
-  var area = (canvas.width * canvas.height) / (40 * 40);
+  var area = (camera.width * camera.height) / (40 * 40);
   var starCount = area * density;
   var starColor = 'rgba(255, 255, 255, 0.3)';
 
   for (var i = 0; i < starCount; i++) {
-    var starX = rand((size / 2), canvas.width - (size / 2));
-    var starY = rand((size / 2), canvas.height - (size / 2));
+    var starX = rand((size / 2), camera.width - (size / 2));
+    var starY = rand((size / 2), camera.height - (size / 2));
 
     panel.context.beginPath();
     panel.context.arc(starX, starY, size, 0, Math.PI * 2, true);
@@ -37,11 +37,11 @@ function createStarPanel(density, size) {
 
 function setupTwinkleStars() {
   twinkleStars = [];
-  var count = Math.floor((canvas.width * canvas.height) / (40 * 40) * 0.08);
+  var count = Math.floor((camera.width * camera.height) / (40 * 40) * 0.08);
   for (var i = 0; i < count; i++) {
     twinkleStars.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x: Math.random() * camera.width,
+      y: Math.random() * camera.height,
       size: 1 + Math.random() * 2,
       phase: Math.random() * Math.PI * 2,
       speed: 0.5 + Math.random() * 1.5
@@ -62,8 +62,8 @@ function setupBackgroundStars() {
 
 // Draw tiling background stars based on camera position
 function drawBackgroundStars() {
-  var w = canvas.width;
-  var h = canvas.height;
+  var w = camera.width;
+  var h = camera.height;
 
   for (var l = 0; l < starLayers.length; l++) {
     var layer = starLayers[l];

@@ -10,8 +10,8 @@ var resumeCountdown = 3;
 // create the pause overlay
 function pauseSetup() {
   pauseCanvas.canvas = document.createElement('canvas');
-  pauseCanvas.canvas.width = canvas.width;
-  pauseCanvas.canvas.height = canvas.height;
+  pauseCanvas.canvas.width = camera.width;
+  pauseCanvas.canvas.height = camera.height;
   pauseCanvas.context = pauseCanvas.canvas.getContext('2d');
 
   createPauseRestartButton();
@@ -36,17 +36,17 @@ function gamePause() {
 
 // pause state
 function drawPauseState() {
-  pauseCanvas.context.clearRect(0, 0, canvas.width, canvas.height);
+  pauseCanvas.context.clearRect(0, 0, camera.width, camera.height);
 
   // game overlay
   pauseCanvas.context.beginPath();
-  pauseCanvas.context.rect(0,0,canvas.width,canvas.height)
+  pauseCanvas.context.rect(0,0,camera.width,camera.height)
   pauseCanvas.context.fillStyle = 'rgba(000,000,000,0.6)';
   pauseCanvas.context.fill();
 
   // sidebar background
   pauseCanvas.context.beginPath();
-  pauseCanvas.context.rect(0,0,320,canvas.height)
+  pauseCanvas.context.rect(0,0,320,camera.height)
   pauseCanvas.context.fillStyle = 'rgba(000,000,000,0.4)';
   pauseCanvas.context.fill();
 
@@ -67,7 +67,7 @@ function drawPauseState() {
   pauseCanvas.context.font = '24px sans-serif';
   pauseCanvas.context.textBaseline="middle";
   pauseCanvas.context.textAlign="center";
-  pauseCanvas.context.fillText('PAUSED (shortcut P)', canvas.width/2+(320/2), canvas.height/2);
+  pauseCanvas.context.fillText('PAUSED (shortcut P)', camera.width/2+(320/2), camera.height/2);
 }
 
 // resume game
@@ -82,9 +82,9 @@ function resumeGame() {
     if (resumeCountdown > 0) {
       // update pause canvas
       var overlay = 0.2*resumeCountdown;
-      pauseCanvas.context.clearRect(0, 0, canvas.width, canvas.height);
+      pauseCanvas.context.clearRect(0, 0, camera.width, camera.height);
       pauseCanvas.context.beginPath();
-      pauseCanvas.context.rect(0,0,canvas.width,canvas.height)
+      pauseCanvas.context.rect(0,0,camera.width,camera.height)
       pauseCanvas.context.fillStyle = 'rgba(000,000,000,'+overlay+')';
       pauseCanvas.context.fill();
 
@@ -92,7 +92,7 @@ function resumeGame() {
       pauseCanvas.context.fillStyle = 'white';
       pauseCanvas.context.font = '48px sans-serif';
       pauseCanvas.context.textAlign="center";
-      pauseCanvas.context.fillText(resumeCountdown, canvas.width/2, canvas.height/2);
+      pauseCanvas.context.fillText(resumeCountdown, camera.width/2, camera.height/2);
       resumeCountdown -= 1;
       resumeGame();
     } else {
@@ -108,6 +108,6 @@ function resumeGame() {
 
 function drawPauseIcon() {
   canvas.context.fillStyle = 'white';
-  canvas.context.fillRect(32,canvas.height-56,4,32);
-  canvas.context.fillRect(48,canvas.height-56,4,32);
+  canvas.context.fillRect(32,camera.height-56,4,32);
+  canvas.context.fillRect(48,camera.height-56,4,32);
 }

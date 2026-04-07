@@ -47,7 +47,7 @@ function drawCharacter(context,state) {
 
 function characterReset() {
   //console.log('reset');
-  character.centerX = (canvas.width/2);
+  character.centerX = (camera.width/2);
   character.centerY = 0;
 }
 

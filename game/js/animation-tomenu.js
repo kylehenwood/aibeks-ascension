@@ -9,7 +9,7 @@ function backToMenu() {
   menuAlpha = 0;
 
   logo.alpha = 0;
-  logo.posX = (canvas.width/2)-(logo.width/2);
+  logo.posX = (camera.width/2)-(logo.width/2);
 
   playButton.alpha = 0;
   menuGravity = 0;
@@ -27,7 +27,7 @@ function backToMenu() {
     // First time — slow pan down from stars to reveal everything
     menuFirstLoad = false;
     camera.target = null;
-    camera.y = canvas.height;
+    camera.y = camera.height;
     camera.vy = 0;
     gameSetup();
     menuEntryProgress = 0;
@@ -43,9 +43,9 @@ function backToMenu() {
 
     // Place platform centered on screen, far below in world Y.
     // Camera pans down (negative camera.y) to reveal it.
-    platform.posX = (canvas.width / 2) - (platform.width / 2);
-    var menuPosY = (canvas.height / 2) - (platform.height / 2) + 120;
-    var panDist = canvas.height * 1.2;
+    platform.posX = (camera.width / 2) - (platform.width / 2);
+    var menuPosY = (camera.height / 2) - (platform.height / 2) + 120;
+    var panDist = camera.height * 1.2;
     platform.posY = menuPosY + panDist; // off-screen below at camera.y = 0
 
     menuCamYStart = camera.y;
@@ -118,7 +118,7 @@ function animateToMenu() {
 
     // Pan complete — snap to final menu positions
     if (menuPanProgress >= 1) {
-      platform.posY = (canvas.height / 2) - (platform.height / 2) + 120;
+      platform.posY = (camera.height / 2) - (platform.height / 2) + 120;
       camera.y = 0;
       camera.vy = 0;
       logo.alpha = 1;
@@ -143,9 +143,9 @@ function animateToMenu() {
     var t = menuEntryProgress;
     var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 
-    // Camera pans from +canvas.height to 0 (below → up to reveal platform)
+    // Camera pans from +camera.height to 0 (below → up to reveal platform)
     var prevY = camera.y;
-    camera.y = canvas.height * (1 - ease);
+    camera.y = camera.height * (1 - ease);
     camera.vy = camera.y - prevY;
     camera.scrollY += camera.vy;
 

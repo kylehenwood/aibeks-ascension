@@ -513,42 +513,12 @@
   }
 
   function applyScaledCanvas() {
-    // Height is always 640 — gameplay is constrained to this
-    // Width expands to match screen aspect ratio so wider screens see more
-    var screenW = window.innerWidth;
-    var screenH = window.innerHeight;
-    var newWidth = Math.round(GAME_HEIGHT * (screenW / screenH));
-
-    canvas.height = GAME_HEIGHT;
-    canvas.width = newWidth;
-    canvasEl.setAttribute('width', canvas.width);
-    canvasEl.setAttribute('height', canvas.height);
-
-    // Resize game-over overlay canvas
-    if (gameOver && gameOver.canvas) {
-      gameOver.canvas.width = canvas.width;
-      gameOver.canvas.height = canvas.height;
-    }
-
-    // Rebuild backgrounds/foregrounds for new dimensions
-    if (typeof setupBackground === 'function') setupBackground();
-    if (typeof setupForeground === 'function') setupForeground();
+    // Canvas stays at fixed camera dimensions (1200x640).
+    // CSS object-fit: contain handles display scaling to any screen size.
     if (typeof setMouseVariables === 'function') setMouseVariables();
   }
 
   function restoreDefaultCanvas() {
-    canvas.width = DEFAULT_WIDTH;
-    canvas.height = GAME_HEIGHT;
-    canvasEl.setAttribute('width', canvas.width);
-    canvasEl.setAttribute('height', canvas.height);
-
-    if (gameOver && gameOver.canvas) {
-      gameOver.canvas.width = canvas.width;
-      gameOver.canvas.height = canvas.height;
-    }
-
-    if (typeof setupBackground === 'function') setupBackground();
-    if (typeof setupForeground === 'function') setupForeground();
     if (typeof setMouseVariables === 'function') setMouseVariables();
   }
 

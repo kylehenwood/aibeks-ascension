@@ -358,7 +358,7 @@ function initDebugControls() {
     camera.x = 0;
     camera.y = 0;
     character.centerY = -32;
-    character.centerX = canvas.width/2;
+    character.centerX = camera.width/2;
     physics.vx = 0;
     physics.vy = 0;
     gameSetup();

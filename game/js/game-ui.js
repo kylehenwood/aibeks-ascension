@@ -28,12 +28,12 @@ function updateInterface() {
 function valueIndicator(context) {
   context.fillStyle = 'white';
   context.font = '24px sans-serif';
-  //context.fillText('Val: '+momentiumAngle, 16, canvas.height-24);
+  //context.fillText('Val: '+momentiumAngle, 16, camera.height-24);
 
   context.textBaseline="bottom";
   context.textAlign="right";
-  context.fillText(Math.round(physics.vx,2)+' :VX', canvas.width-24, canvas.height-56);
-  context.fillText(Math.round(physics.vy,2)+' :VY', canvas.width-24, canvas.height-24);
+  context.fillText(Math.round(physics.vx,2)+' :VX', camera.width-24, camera.height-56);
+  context.fillText(Math.round(physics.vy,2)+' :VY', camera.width-24, camera.height-24);
 }
 
 // fps display
@@ -61,5 +61,5 @@ function scoreCounter(context) {
   context.textBaseline="top";
   context.textAlign="right";
   context.font = '24px sans-serif';
-  context.fillText('DISTANCE: '+gameUserInterface.score+'m', canvas.width-24, 24);
+  context.fillText('DISTANCE: '+gameUserInterface.score+'m', camera.width-24, 24);
 }

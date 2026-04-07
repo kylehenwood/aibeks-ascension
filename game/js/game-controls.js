@@ -19,8 +19,8 @@ function mouseTestSetup() {
   elem.addEventListener('click', function(event) {
     // Map screen pixels to canvas coordinates (accounts for CSS scaling)
     var rect = elem.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
+    var scaleX = camera.width / rect.width;
+    var scaleY = camera.height / rect.height;
     var mouseX = (event.pageX - rect.left) * scaleX;
     var mouseY = (event.pageY - rect.top) * scaleY;
 
@@ -85,7 +85,7 @@ function playClick(mouseX,mouseY) {
       changeHook(closestIndex);
     }
     // paused button
-    if (mouseY > canvas.height-80 && mouseX < 80) {
+    if (mouseY > camera.height-80 && mouseX < 80) {
       clickedSomething = true;
       gamePause();
     }
@@ -109,7 +109,7 @@ function pauseClick(mouseX,mouseY) {
 
 // allow click of pause button during resume state
 function resumeClick(mouseX,mouseY) {
-  if (mouseY > canvas.height-80 && mouseX < 80) {
+  if (mouseY > camera.height-80 && mouseX < 80) {
     gamePause();
   }
 }

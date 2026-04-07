@@ -30,7 +30,7 @@
   switch(urlHash) {
     case '#game-play': // play game
       character.centerY = -32;
-      character.centerX = canvas.width/2;
+      character.centerX = camera.width/2;
       gameMode = 'endless';
       gameSetup();
       startGame();
