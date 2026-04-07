@@ -28,6 +28,7 @@ function animateStart() {
   character.centerX = platform.posX + platform.width / 2;
   character.centerY = hoverY + 26 - character.size / 2;
 
+  logo.posX = (canvas.width / 2) - (logo.width / 2);
   start.logoStartX = logo.posX;
   start.platformStartX = platform.posX;
 
@@ -53,11 +54,30 @@ function drawExitingPlatform(context) {
   else { platform.hover += 0.024 * dt; }
   platform.time += 0.016 * dt;
 
+  // Register collision surface when platform starts exiting
+  if (!start.platformSurface) {
+    start.platformSurface = addSurface({
+      x: start.platformStartX,
+      y: platform.posY + platform.hover + 26,
+      width: platform.width,
+      height: 10,
+      parallax: start.platformParallax,
+      topOnly: true,
+      tag: 'platform'
+    });
+  }
+
+  // Update surface position each frame (hover bobs)
+  start.platformSurface.x = start.platformStartX;
+  start.platformSurface.y = platform.posY + platform.hover + 26;
+
   var platScreenX = start.platformStartX + camera.x * start.platformParallax;
   var platScreenY = platform.posY + platform.hover + camera.y * start.platformParallax;
-  // Off screen — stop drawing permanently
+  // Off screen — stop drawing and remove collision surface
   if (platScreenX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
+    removeSurface(start.platformSurface);
+    start.platformSurface = null;
     return;
   }
   drawFloatingRocks(context, platScreenY, 0, platScreenX);
@@ -76,6 +96,7 @@ var start = {
   platformStartX: 0,
   platformParallax: 0.6,
   platformExiting: false,
+  platformSurface: null,
   hopVY: 0,
   hopping: false
 }
@@ -118,7 +139,7 @@ function updateStart() {
     character.centerY = hoverY + 26 - character.size / 2;
 
     // Fade out logo — drifts slightly less than camera (background feel)
-    start.logoAlpha = Math.max(0, 1 - ease * 2);
+    start.logoAlpha = 1 - ease;
     if (start.logoAlpha > 0) {
       context.save();
       context.globalAlpha = start.logoAlpha;

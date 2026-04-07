@@ -3,13 +3,11 @@ function clearVariables() {
   elements = [];
   starHooks = [];
 
-  // camera (preserve scrollX for seamless bg parallax)
-  camera.x = 0;
-  camera.y = 0;
+  // camera — preserve x/y position for seamless transitions
   camera.vx = 0;
   camera.vy = 0;
-  camera.targetX = 0;
-  camera.targetY = 0;
+  camera.targetX = camera.x;
+  camera.targetY = camera.y;
   camera.ease = 16;
   camera.target = null;
 
@@ -40,4 +38,9 @@ function clearVariables() {
 
   // Reset grid to initial size for fresh generation
   gridSize.cols = 50;
+
+  // Clear all collision surfaces
+  removeAllSurfaces();
+  start.platformSurface = null;
+  start.platformExiting = false;
 }

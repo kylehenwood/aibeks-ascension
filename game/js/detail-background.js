@@ -1,5 +1,8 @@
-// all detail that appears infront of the character
-// parralax
+// Background star layers — created once, never regenerated
+// Tiles infinitely based on camera position with parallax
+
+var starLayers = [];
+var twinkleStars = [];
 
 function setupBackground() {
   setupBackgroundStars();
@@ -7,55 +10,30 @@ function setupBackground() {
 
 function drawBackground() {
   drawBackgroundStars();
-  // draw clouds at the bottom of screen.
-  //drawBackgroundMoon(canvas.context);
-  //drawBackgroundClouds(canvas.context);
 }
 
-
-// function drawBackgroundMoon(context) {
-//   context.beginPath();
-//   context.arc(canvas.width/2, canvas.height+128, 200, 0, 2 * Math.PI, false);
-//   context.fillStyle = 'white';
-//   context.fill();
-//   context.closePath();
-// }
-
-
-// background contains... small stars (differing sizes / layers)
-// MOON + lightrays
-// shooting stars
-// aruroa?
-
-var starLayers = [];
-var twinkleStars = [];
-
-function createStarPanel(density,size) {
+function createStarPanel(density, size) {
   var panel = document.createElement('canvas');
   panel.width = canvas.width;
   panel.height = canvas.height;
   panel.context = panel.getContext('2d');
 
-  // how many stars on this panel?
-  var area = (canvas.width*canvas.height)/(40*40);
-  var starCount = area*density;
-  var starSize = size;
+  var area = (canvas.width * canvas.height) / (40 * 40);
+  var starCount = area * density;
   var starColor = 'rgba(255, 255, 255, 0.3)';
 
-  // draw stars on panel
   for (var i = 0; i < starCount; i++) {
-    var starX = rand((size/2),canvas.width-(size/2));
-    var starY = rand((size/2),canvas.height-(size/2));
+    var starX = rand((size / 2), canvas.width - (size / 2));
+    var starY = rand((size / 2), canvas.height - (size / 2));
 
     panel.context.beginPath();
-    panel.context.arc(starX, starY, starSize, 0, Math.PI*2, true);
+    panel.context.arc(starX, starY, size, 0, Math.PI * 2, true);
     panel.context.closePath();
     panel.context.fillStyle = starColor;
     panel.context.fill();
   }
   return panel;
 }
-
 
 function setupTwinkleStars() {
   twinkleStars = [];
@@ -72,38 +50,32 @@ function setupTwinkleStars() {
 }
 
 function setupBackgroundStars() {
-
-  // DENSITY, SIZE, DEPTH
-  // Each layer stores one panel texture and a parallax depth factor
   starLayers = [];
   setupTwinkleStars();
 
-  // posZ = parallax depth. 0 = fixed, 1 = moves with camera exactly
-  // Lower = further away (barely moves), higher = closer (rushes past)
-  starLayers.push({canvas: createStarPanel(0.12, 1), key: 'bgStars1'});
-  starLayers.push({canvas: createStarPanel(0.06, 1), key: 'bgStars2'});
-  starLayers.push({canvas: createStarPanel(0.02, 2), key: 'bgStars3'});
-  starLayers.push({canvas: createStarPanel(0.01, 2), key: 'bgStars4'});
-  starLayers.push({canvas: createStarPanel(0.005,3), key: 'bgStars5'});
+  starLayers.push({ canvas: createStarPanel(0.12, 1), key: 'bgStars1' });
+  starLayers.push({ canvas: createStarPanel(0.06, 1), key: 'bgStars2' });
+  starLayers.push({ canvas: createStarPanel(0.02, 2), key: 'bgStars3' });
+  starLayers.push({ canvas: createStarPanel(0.01, 2), key: 'bgStars4' });
+  starLayers.push({ canvas: createStarPanel(0.005, 3), key: 'bgStars5' });
 }
 
-
-
-// Called by RAF
+// Draw tiling background stars based on camera position
 function drawBackgroundStars() {
   var w = canvas.width;
   var h = canvas.height;
 
-  starLayers.forEach(function(layer) {
+  for (var l = 0; l < starLayers.length; l++) {
+    var layer = starLayers[l];
     var depth = parallax[layer.key];
     var offsetX = camera.scrollX * depth;
-    var offsetY = camera.y * depth;
+    var offsetY = camera.scrollY * depth;
 
-    // Wrap to a single tile offset using modulo
+    // Modulo wrap to a single tile offset
     var tileX = ((offsetX % w) + w) % w;
     var tileY = ((offsetY % h) + h) % h;
 
-    // Draw tiles to cover the viewport seamlessly
+    // Draw 2x2 grid of tiles to cover viewport seamlessly
     for (var tx = -1; tx <= 1; tx++) {
       for (var ty = -1; ty <= 1; ty++) {
         var drawX = tileX + tx * w;
@@ -113,19 +85,20 @@ function drawBackgroundStars() {
         }
       }
     }
-  });
+  }
 
-  // twinkle overlay — sits on the distant layer
+  // Twinkle overlay — distant layer
   var time = Date.now() / 1000;
   var twinkleOffsetX = camera.scrollX * parallax.twinkle;
-  var twinkleOffsetY = camera.y * parallax.twinkle;
+  var twinkleOffsetY = camera.scrollY * parallax.twinkle;
 
-  twinkleStars.forEach(function(star) {
+  for (var i = 0; i < twinkleStars.length; i++) {
+    var star = twinkleStars[i];
     var alpha = 0.2 + 0.8 * (0.5 + 0.5 * Math.sin(time * star.speed + star.phase));
     var drawX = star.x + twinkleOffsetX;
     var drawY = star.y + twinkleOffsetY;
 
-    // wrap
+    // Wrap to viewport
     drawX = ((drawX % w) + w) % w;
     drawY = ((drawY % h) + h) % h;
 
@@ -134,5 +107,5 @@ function drawBackgroundStars() {
     canvas.context.closePath();
     canvas.context.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
     canvas.context.fill();
-  });
+  }
 }

@@ -67,4 +67,7 @@ function characterFalling(context) {
   }
   character.centerX += physics.vx * dt;
   character.centerY += physics.vy * dt;
+
+  // Check collisions with registered surfaces (platform, etc.)
+  checkSurfaceCollisions();
 }

@@ -9,14 +9,22 @@ function backToMenu() {
   menuCamYStart = camera.y;
 
   logo.alpha = 0;
-  logo.posX = -camera.x + (canvas.width/2)-(logo.width/2);
+  logo.posX = (canvas.width/2)-(logo.width/2);
 
   playButton.alpha = 0;
 
-  // hide character off-screen during transition
-  character.centerX = -9999;
-  character.centerY = -9999;
+  // Character stays at gameplay position during sweep (scrolls out with old content)
+  // It gets hidden at the midpoint swap
   menuGravity = 0;
+
+  // Clean up exiting platform from gameplay (surface + draw flag)
+  if (start.platformExiting) {
+    start.platformExiting = false;
+    if (start.platformSurface) {
+      removeSurface(start.platformSurface);
+      start.platformSurface = null;
+    }
+  }
 
   if (menuFirstLoad) {
     // First time — slow pan down from stars to reveal everything
@@ -85,24 +93,26 @@ function animateToMenu() {
     if (!menuPanReset && menuPanProgress >= 0.5) {
       menuPanReset = true;
 
-      var savedCamX = camera.x;
       var savedScrollX = camera.scrollX;
       var savedScrollY = camera.scrollY;
 
       clearVariables();
       gameSetup();
 
-      camera.x = savedCamX;
+      // Reset camera.x to 0 — menu elements draw in screen space
+      camera.x = 0;
+      camera.vx = 0;
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
 
-      // Position platform and logo relative to camera
-      platform.posX = -camera.x + (canvas.width / 2) - (platform.width / 2);
-      logo.posX = -camera.x + (canvas.width / 2) - (logo.width / 2);
+      // Position platform and logo centered on screen
+      platform.posX = (canvas.width / 2) - (platform.width / 2);
+      logo.posX = (canvas.width / 2) - (logo.width / 2);
 
       // New content at world Y ~0. Camera at +clearance puts it below viewport.
       camera.y = clearance;
 
+      // Character removed — will respawn above camera after sweep
       character.centerX = -9999;
       character.centerY = -9999;
       return;

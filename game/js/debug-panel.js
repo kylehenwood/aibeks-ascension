@@ -51,7 +51,8 @@ function createDebugPanel() {
         '</div>' +
         '<div class="debug-panel__state">' +
           'State: <span id="debug-state-display">--</span>' +
-        '</div>'
+        '</div>' +
+        sliderHTML('Restart Duration', 'debug-restart-duration', 60, 600, 10, 'Duration of restart pan in frames (60fps)')
       ) +
 
       // Toggles
@@ -376,6 +377,15 @@ function initDebugControls() {
   });
 
   // --- Sliders ---
+  var restartDurSlider = document.getElementById('debug-restart-duration');
+  var restartDurVal = document.getElementById('debug-restart-duration-val');
+  restartDurSlider.value = restartDuration;
+  restartDurVal.textContent = restartDuration;
+  restartDurSlider.addEventListener('input', function() {
+    restartDuration = parseInt(this.value);
+    restartDurVal.textContent = this.value;
+  });
+
   var gravitySlider = document.getElementById('debug-gravity');
   var gravityVal = document.getElementById('debug-gravity-val');
   gravitySlider.value = physics.GRAVITY;

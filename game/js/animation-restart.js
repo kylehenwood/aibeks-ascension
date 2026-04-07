@@ -1,100 +1,116 @@
 var restartProgress = 0;
+var restartPhase = 'idle'; // 'panning' | 'falling' | 'idle'
 var restartGameReset = false;
-var restartPanSpeed = 0;
-var restartFalling = false;
+var restartCamYStart = 0;
+var restartDuration = 180; // frames (~3s at 60fps) — adjustable via debug panel
 
 function restartGame() {
   gameState = "gameRestart";
   restartProgress = 0;
+  restartPhase = 'panning';
   restartGameReset = false;
-  restartFalling = false;
+  restartCamYStart = camera.y;
   camera.target = null;
   detach();
 }
 
-// One-way pan DOWN: slow → fast → slow (sine-based velocity)
+// Restart animation — single continuous sweep:
 //
-// Background: camera.vy drives camera.scrollY which accumulates continuously.
-//             Stars scroll down smoothly the whole time.
-//
-// Game panel + clouds: camera.y fakes the transition.
-//   First half:  camera.y goes negative (old level exits upward)
-//   Midpoint:    game resets (hidden by peak speed)
-//   Second half: camera.y goes from positive back to 0 (new level enters from below)
-//
-// Character falls in from above once camera settles.
+// Camera pans down using a sine curve (slow → fast → slow).
+// Old content exits upward. At the midpoint (peak speed, content off screen),
+// the level is swapped and camera.y is repositioned so the sweep continues
+// seamlessly — new content enters from below and settles at camera.y = 0.
 
 function restartAnimation() {
-  var duration = 180; // ~3 seconds at 60fps
-  var panDistance = canvas.height * 2; // total distance each half covers
+  var clearance = canvas.height * 1.5;
+  var totalDistance = clearance * 2; // full sweep: clearance down + clearance back up
 
-  restartProgress += (1 / duration) * dt;
+  restartProgress += (1 / restartDuration) * dt;
   if (restartProgress > 1) restartProgress = 1;
 
-  // Sine-based speed: slow → fast → slow (one direction)
-  // sin(progress * π) peaks at 0.5, giving smooth acceleration/deceleration
-  restartPanSpeed = Math.sin(restartProgress * Math.PI) * 18;
+  if (restartPhase === 'panning') {
+    // Single sine curve: slow → fast at midpoint → slow
+    // sin(progress * PI) gives 0→1→0 speed profile
+    // Integrated: (1 - cos(progress * PI)) / 2 gives 0→1 position with sine easing
+    var ease = (1 - Math.cos(restartProgress * Math.PI)) / 2;
 
-  // Drive background scroll — accumulate directly since updateCamera() isn't called
-  camera.vy = -restartPanSpeed;
-  camera.scrollY += camera.vy * dt;
+    var prevCamY = camera.y;
 
-  // Game panel position: fake the level swap
-  if (restartProgress < 0.5) {
-    // First half: old level slides up and out
-    // Map 0→0.5 progress to 0→1 using easeInCubic for smooth exit
-    var t = restartProgress * 2;
-    var ease = t * t * t;
-    camera.y = -ease * panDistance;
-  } else {
-    // Second half: new level enters from below
-    // Map 0.5→1 progress to 1→0 using easeOutCubic for smooth arrival
-    var t = (restartProgress - 0.5) * 2;
-    var ease = 1 - (1 - t) * (1 - t) * (1 - t);
-    camera.y = (1 - ease) * panDistance;
+    if (!restartGameReset) {
+      // First half: pan down from start, old content exits up
+      camera.y = restartCamYStart - ease * totalDistance;
+    } else {
+      // Second half: continue from +clearance down to 0
+      // At the swap point, ease was 0.5, camera.y was set to +clearance
+      // Map ease from 0.5→1 to clearance→0
+      var t = (ease - 0.5) * 2; // 0→1 over second half
+      camera.y = clearance * (1 - t);
+    }
+
+    camera.vy = camera.y - prevCamY;
+    camera.scrollY += camera.vy;
+
+    // Swap at midpoint — content is off screen, camera moving fastest
+    if (!restartGameReset && restartProgress >= 0.5) {
+      restartGameReset = true;
+
+      var savedCamX = camera.x;
+      var savedScrollX = camera.scrollX;
+      var savedScrollY = camera.scrollY;
+
+      clearVariables();
+      gameSetup();
+
+      camera.x = savedCamX;
+      camera.scrollX = savedScrollX;
+      camera.scrollY = savedScrollY;
+
+      // Position first star centered on screen relative to current camera.x
+      var screenCenterX = -camera.x + canvas.width / 2;
+      var shift = screenCenterX - starHooks[0].centerX;
+      for (var i = 0; i < starHooks.length; i++) {
+        starHooks[i].posX += shift;
+        starHooks[i].centerX += shift;
+      }
+      for (var i = 0; i < elements.length; i++) {
+        elements[i].posX += shift;
+      }
+      for (var i = 0; i < gridPositions.length; i++) {
+        gridPositions[i].positionX += shift;
+      }
+      drawClicky();
+
+      // Reposition camera so new content (at world Y=0) is below viewport
+      camera.y = clearance;
+
+      character.centerX = -9999;
+      character.centerY = -9999;
+      return;
+    }
+
+    // Sweep complete — start character falling
+    if (restartProgress >= 1) {
+      camera.y = 0;
+      camera.vx = 0;
+      camera.vy = 0;
+      restartPhase = 'falling';
+
+      character.centerX = starHooks[0].centerX - 240;
+      character.centerY = starHooks[0].centerY - canvas.height;
+      physics.vx = 0;
+      physics.vy = 0;
+    }
   }
 
-  // Reset the game just before the midpoint while old level is still off screen
-  // This ensures the new level is ready before the second half starts drawing it
-  if (!restartGameReset && restartProgress >= 0.45) {
-    restartGameReset = true;
-    clearVariables();
-    gameSetup();
-    positionFirstStar();
-    var firstStar = starHooks[0];
-    camera.x = -(firstStar.centerX - canvas.width / 2);
-    camera.vx = 0;
-    // Hide character off-screen until falling phase
-    character.centerX = -9999;
-    character.centerY = -9999;
-    // Push new level off screen below so it's not visible on this frame
-    camera.y = canvas.height * 3;
-    return;
-  }
-
-  // Pan complete — start character falling in
-  if (restartProgress >= 1 && !restartFalling) {
-    restartFalling = true;
-    camera.vx = 0;
-    camera.vy = 0;
-    camera.y = 0;
-
-    // Position character 240px left of first star (world coords), above camera
-    character.centerX = starHooks[0].centerX - 240;
-    character.centerY = -character.size;
-    physics.vx = 0;
-    physics.vy = 0;
-  }
-
-  // Character falling phase — gravity handled by characterFalling() in updateGame()
-  if (restartFalling) {
-    // When character is 40px above the star's Y level, grapple
-    if (character.centerY >= starHooks[0].centerY - 40) {
-      restartFalling = false;
+  // Character falls in — gravity handled by characterFalling() in updateGame()
+  if (restartPhase === 'falling') {
+    if (character.centerY >= starHooks[0].centerY + 40) {
+      restartPhase = 'idle';
       gameState = "playGame";
       hookAlpha = 1;
       infiniteGen.startX = starHooks[0].centerX;
       infiniteGen.maxDistance = 0;
+      starImmunity.immune = true;
       cameraFollowHook();
       changeHook(0);
     }
