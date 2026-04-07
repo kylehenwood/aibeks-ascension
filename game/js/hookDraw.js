@@ -37,11 +37,13 @@ function drawHook(hookVariable,optional) {
 
   // drain star
   if (hookVariable.selected === true && star.safe === false && star.alive === true && character.swinging === true) {
-    // drain star power & increase score
-    gameUserInterface.score += 1;
-    starImmunity.power += 1;
-    star.ring -= 0.02;
-    if (star.ring <= 0 && star.alive === true) {
+    if (debugImmunityEnabled) {
+      starImmunity.power += 1*dt;
+    }
+    if (debugStarDecayEnabled) {
+      star.ring -= debugStarDecayRate*dt;
+    }
+    if (star.ring <= 0 && star.alive === true && debugStarsCanDie) {
       star.alive = false;
     }
   }

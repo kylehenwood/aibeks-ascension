@@ -22,24 +22,23 @@
 
   //loadAudio();
   soundToggle();
+  createDebugPanel();
 
   // point at which game starts...
   var urlHash = window.location.hash;
   //console.log(urlHash);
   switch(urlHash) {
     case '#game-play': // play game
-      //startGame();
       character.centerY = -32;
       character.centerX = canvas.width/2;
+      gameMode = 'endless';
       gameSetup();
       startGame();
-      //animateStart();
       break;
     case '#game-intro':
       setupIntro();
       break;
     case '#game-menu':
-      gameSetup();
       setupMenu();
       break;
     case '#game-loading':

@@ -21,7 +21,7 @@ function updateGameOver() {
   gameOver.context.clearRect(0,0,canvas.width,canvas.height)
 
   gameOver.context.fillStyle = 'white';
-  gameOver.context.font = '24px lato';
+  gameOver.context.font = '24px sans-serif';
   gameOver.context.textAlign = "center";
   gameOver.context.fillText('GAME OVER (Press "R" to restart)', canvas.width/2, canvas.height/2-80);
 

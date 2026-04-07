@@ -30,7 +30,7 @@ function createPauseMenuButton(){
 
   // button text
   button.context.fillStyle = 'black';
-  button.context.font = 'bold 18px lato';
+  button.context.font = 'bold 18px sans-serif';
   button.context.textBaseline="middle";
   button.context.textAlign="center";
   button.context.fillText('Back to Menu', button.width/2, button.height/2);
@@ -65,7 +65,7 @@ function createPauseRestartButton(){
 
   // button text
   button.context.fillStyle = 'black';
-  button.context.font = 'bold 18px lato';
+  button.context.font = 'bold 18px sans-serif';
   button.context.textBaseline="middle";
   button.context.textAlign="center";
   button.context.fillText('Restart', button.width/2, button.height/2);
@@ -101,7 +101,7 @@ function createPauseResumeButton(){
 
     // button text
     button.context.fillStyle = 'black';
-    button.context.font = 'bold 18px lato';
+    button.context.font = 'bold 18px sans-serif';
     button.context.textBaseline="middle";
     button.context.textAlign="center";
     button.context.fillText('Resume', button.width/2, button.height/2);

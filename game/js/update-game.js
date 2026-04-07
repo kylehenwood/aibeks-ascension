@@ -5,16 +5,42 @@
 // animates the currently selected star
 function updateGame() {
 
+  // Infinite generation: spawn more stars when camera approaches the last star
+  if (starHooks.length > 0) {
+    var lastStarX = starHooks[starHooks.length - 1].posX;
+    var cameraRight = -camera.x + canvas.width;
+    if (gameState === 'playGame' && cameraRight > lastStarX - canvas.width * 2) {
+      generateMoreStars();
+    }
+  }
+
+  // World shift: keep canvas coordinates bounded when stars approach canvas edge
+  if (starHooks.length > 0 && starHooks[starHooks.length - 1].posX > infiniteGen.canvasWidth - canvas.width * 2) {
+    shiftWorld();
+  }
+
+  // Cleanup: remove old stars far behind the camera
+  cleanupOldStars();
+
   var gameCanvas = gamePanel.canvas;
   var gameContext = gamePanel.context;
 
-  // clear
-  var cameraPosition = canvas.width-moveCanvas.currentPos;
+  // Clear only visible area for performance on large canvases
+  var viewLeft = Math.max(0, -camera.x - 200);
+  var viewRight = Math.min(gameCanvas.width, -camera.x + canvas.width + 200);
+  gameContext.clearRect(viewLeft, 0, viewRight - viewLeft, canvas.height);
 
-  gameContext.clearRect(0, 0, cameraPosition, canvas.height);
+  // Update distance score (furthest X reached)
+  if (character.centerX > infiniteGen.startX) {
+    var dist = character.centerX - infiniteGen.startX;
+    if (dist > infiniteGen.maxDistance) {
+      infiniteGen.maxDistance = dist;
+    }
+  }
+  gameUserInterface.score = Math.floor(infiniteGen.maxDistance / 10);
 
-  // Draw grid
-  //gameContext.drawImage(gridImage,0,0);
+  // Draw subtle grid lines in the visible area
+  drawVisibleGrid(gameContext, viewLeft, viewRight);
 
 
   // if character is grappeling a hook
@@ -26,6 +52,11 @@ function updateGame() {
   }
   if (character.swinging === false){
     characterFalling(gameContext);
+  }
+
+  // Sparkle particles (render even when rope inactive so they fade out)
+  if (physics.sparkles.length > 0 && !character.swinging) {
+    physicsUpdateSparkles(dt, gameContext);
   }
 
   // launch grappel from character to hook
@@ -40,9 +71,11 @@ function updateGame() {
     drawHook(selectedHook);
   }
 
-  // draw each hook to this canvas.
+  // draw each hook to this canvas (only visible ones for performance)
   for (var i = 0; i < starHooks.length; i++) {
     var hook = starHooks[i];
-    gameContext.drawImage(hook.layer, hook.posX, hook.posY);
+    if (hook.posX + hook.size >= viewLeft && hook.posX <= viewRight) {
+      gameContext.drawImage(hook.layer, hook.posX, hook.posY);
+    }
   }
 }

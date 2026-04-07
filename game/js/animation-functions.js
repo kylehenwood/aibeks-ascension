@@ -30,7 +30,7 @@ function animateNum(from,to,duration,easing){
   }
 
   // increment animation progress from 0 to 1
-  animateNumber.progress += animateNumber.increment;
+  animateNumber.progress += animateNumber.increment*dt;
 
   // check if complete
   if (Math.round(animateNumber.progress) >= 100) {
@@ -52,6 +52,26 @@ function animateNum(from,to,duration,easing){
 
     case 'easeInOutQuad':
       animation = EasingFunctions.easeInOutQuad(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeInCubic':
+      animation = EasingFunctions.easeInCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeOutCubic':
+      animation = EasingFunctions.easeOutCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeInOutCubic':
+      animation = EasingFunctions.easeInOutCubic(animateNumber.progress/100);
+      value = animateNumber.amount*animation;
+      break;
+
+    case 'easeInOutQuart':
+      animation = EasingFunctions.easeInOutQuart(animateNumber.progress/100);
       value = animateNumber.amount*animation;
       break;
 

@@ -11,8 +11,9 @@ function detach() {
   }
 
   //console.log("detach");
-  cameraMode = 'character';
+  cameraFollowCharacter();
   character.swinging = false;
+  physicsDetach();
 
   // de select the selected hook;
   if (selectedHook != null) {
@@ -36,8 +37,7 @@ function attach() {
   if (selectedHook != null) {
     soundGrappelHit();
     //console.log("attach");
-    gravity = 0;
-    cameraMode = 'hook';
+    cameraFollowHook();
     selectedHook.selected = true;
     character.swinging = true;   // if character.connected === true, start draining the stars power.
   }

@@ -11,11 +11,11 @@ function updateMoonPowerBar() {
   context.fillStyle = 'rgba(0,0,0,0.8)';
   context.fillRect(barGutter,canvas.height-64,barWidth,barHeight)
 
-  var maxPower = 200;
+  var maxPower = debugImmunityThreshold;
 
   if(starImmunity.power > maxPower) {
     starImmunity.power = maxPower;
-    starImmunity.immune = true;
+    starImmunity.immune = debugImmunityEnabled;
     context.fillStyle = 'cyan';
   } else {
     context.fillStyle = 'white';

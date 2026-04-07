@@ -10,7 +10,6 @@ var menuElems = [];
 
 function setupMenu() {
   gameState = 'gameMenu';
-  character.centerY = 368;
   character.centerX = canvas.width/2;
 }
 
@@ -22,22 +21,17 @@ function createMenu() {
   gameMenu.context = gameMenu.canvas.getContext('2d');
 
   // intro elements
-  // - theme button
-  // - settings button
-  // - sound button
-  // - play button
-  // width, height, posX, posY, action, style
   createPlayButton(playButton);
   menuElems.push(playButton);
 
-  createSettingsButton(settingsButton);
-  menuElems.push(settingsButton);
+  // createSettingsButton(settingsButton);
+  // menuElems.push(settingsButton);
 
-  createSoundButton(soundButton);
-  menuElems.push(soundButton);
+  // createSoundButton(soundButton);
+  // menuElems.push(soundButton);
 
-  createThemeButton(themeButton);
-  menuElems.push(themeButton);
+  // createThemeButton(themeButton);
+  // menuElems.push(themeButton);
 
   createLogo();
   createPlatform();
@@ -50,39 +44,58 @@ function updateMenu() {
 
   context.clearRect(0, 0, canvas.width, canvas.height);
 
-  // overlay
-  // context.beginPath();
-  // context.rect(0,0,canvas.width,canvas.height)
-  // context.fillStyle = 'rgba(255,000,000,0.1)';
-  // context.fill();
-  // context.closePath();
+  // Position character on the platform surface
+  var hoverY = platform.posY + platform.hover;
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = hoverY + 26 - character.size / 2;
 
-  //var context = gameMenu.context;
+  // title (behind platform)
+  context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY);
 
-  // hover animation
-  // if (platform.hoverDirection === 'up' && platform.hover <= 0) {
-  //   platform.hoverDirection = 'down';
-  // }
-  // if (platform.hoverDirection === 'down' && platform.hover >= 5) {
-  //   platform.hoverDirection = 'up';
-  // }
-  // if (platform.hoverDirection === 'up') {
-  //   platform.hover -= 0.024;
-  // } else {
-  //   platform.hover += 0.024;
-  // }
+  // platform scene (drawn by RAF, not here — we just draw logo, character, buttons)
+  drawPlatformScene(context);
 
-  // floating platform
-  context.drawImage(platform.canvas,platform.posX,platform.posY)
+  // Draw character on platform
+  drawCharacter(context);
 
-  // title
-  context.drawImage(logo.canvas,logo.posX,logo.posY);
-
-  // intro buttons
-  context.drawImage(themeButton.canvas,themeButton.posX,themeButton.posY);
-  context.drawImage(soundButton.canvas,soundButton.posX,soundButton.posY);
-  context.drawImage(settingsButton.canvas,settingsButton.posX,settingsButton.posY);
+  // intro buttons (disabled for now)
+  // context.drawImage(themeButton.canvas, themeButton.posX, themeButton.posY);
+  // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
+  // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
 
   // play button
-  context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
+  context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
+}
+
+// Unified platform drawing — called every frame in all game states.
+// cameraOffset is the current camera.y during transitions (0 when settled).
+// The platform gets a foreground parallax multiplier so it feels closer to camera.
+function drawPlatformScene(context, cameraOffset) {
+  // hover animation (always ticks)
+  if (platform.hoverDirection === 'up' && platform.hover <= 0) {
+    platform.hoverDirection = 'down';
+  }
+  if (platform.hoverDirection === 'down' && platform.hover >= 5) {
+    platform.hoverDirection = 'up';
+  }
+  if (platform.hoverDirection === 'up') {
+    platform.hover -= 0.024 * dt;
+  } else {
+    platform.hover += 0.024 * dt;
+  }
+  platform.time += 0.016 * dt;
+
+  var offset = cameraOffset || 0;
+  var platY = platform.posY + platform.hover + offset * parallax.platform;
+
+  // floating rocks — closer parallax than platform
+  drawFloatingRocks(context, platY, offset, platform.posX);
+
+  // platform
+  context.drawImage(platform.canvas, platform.posX, platY);
+
+  // campfire flames
+  var fireCx = platform.posX + platform.width * 0.3;
+  var fireBaseY = platY + 32;
+  drawCampfireFlames(context, fireCx, fireBaseY, platform.time, 1.6);
 }
