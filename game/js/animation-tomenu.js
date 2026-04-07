@@ -3,25 +3,15 @@ var menuFirstLoad = true;
 
 var menuCamYStart = 0;
 var menuPanTargetY = 0;
+var menuPhase2StartY = 0;
 
 function backToMenu() {
   gameState = 'menuAnimation';
   menuAlpha = 0;
 
   logo.alpha = 0;
-  logo.posX = (camera.width/2)-(logo.width/2);
-
   playButton.alpha = 0;
   menuGravity = 0;
-
-  // Clean up exiting platform from gameplay (surface + draw flag)
-  if (start.platformExiting) {
-    start.platformExiting = false;
-    if (start.platformSurface) {
-      removeSurface(start.platformSurface);
-      start.platformSurface = null;
-    }
-  }
 
   if (menuFirstLoad) {
     // First time — menu scene at standard positions, camera starts below, pans up
@@ -30,7 +20,7 @@ function backToMenu() {
     camera.vy = 0;
     gameSetup();
 
-    // Standard menu positions
+    // Standard menu positions (where things settle at camera.y = 0)
     platform.posX = (camera.width / 2) - (platform.width / 2);
     platform.posY = (camera.height / 2) - (platform.height / 2) + 120;
     logo.posX = (camera.width/2)-(logo.width/2);
@@ -38,20 +28,20 @@ function backToMenu() {
     logo.alpha = 0;
     menuAlpha = 0;
 
-    // Camera starts below so all elements are off-screen above
-    camera.y = camera.height;
+    // Calculate camera.y start so ALL elements are off-screen below.
+    // Screen Y = worldY + camera.y * parallax. To be below screen:
+    //   worldY + startY * parallax > camera.height
+    // Logo has the smallest parallax (0.3) so it's the bottleneck.
+    var introStartY = Math.ceil((camera.height - logo.posY + 100) / parallax.logo);
+    camera.y = introStartY;
+    menuCamYStart = introStartY;
     menuEntryProgress = 0;
     menuStage = 5; // intro pan stage
   } else {
-    // Returning from gameplay — two-phase pan:
-    // Phase 1 (stage 10): pan down to push old content off-screen
-    // Phase 2 (stage 11): create new menu scene, pan up to reveal it
+    // Returning from gameplay — single sine-curve sweep.
+    // Old scene stays alive during phase 1 (stars, platform, character visible).
+    // Everything cleaned up at midpoint when off-screen.
     camera.target = null;
-    detach();
-
-    // Snap camera.x to 0 for a purely vertical pan
-    camera.x = 0;
-    camera.vx = 0;
 
     menuCamYStart = camera.y;
     menuPanProgress = 0;
@@ -74,37 +64,46 @@ var charFallVY = 0;
 // once complete it transitions to gameMenu state.
 function animateToMenu() {
 
-  // ::Stage 10 — back to menu: pan down past old content, then up to new menu
+  // ::Stage 10 — back to menu: single sine-curve sweep (mirrors restart)
   //
-  // Phase 1: camera.y goes negative — old content scrolls up and off-screen.
-  // At midpoint: clean up, reset menu elements to standard positions,
-  //              set camera.y to +camera.height (below the menu scene).
-  // Phase 2: camera.y pans from +camera.height to 0 — menu enters from above.
-  // Parallax handles all element positioning naturally.
+  // Same structure as restartAnimation: single sine curve, swap at midpoint.
+  // Phase 1: old content exits upward.
+  // Phase 2: new menu scene enters from below via parallax.
   if (menuStage === 10) {
-    var totalDuration = 240; // ~4 seconds total at 60fps
-    menuPanProgress += (1 / totalDuration) * dt;
+    var clearance = camera.height * 1.5;
+    var totalDistance = clearance * 2;
+
+    menuPanProgress += (1 / 180) * dt; // ~3 seconds — matches restart
     if (menuPanProgress > 1) menuPanProgress = 1;
 
     var ease = (1 - Math.cos(menuPanProgress * Math.PI)) / 2;
     var prevCamY = camera.y;
 
     if (!menuPanReset) {
-      // Phase 1: pan down — old content exits upward
-      var panDown = camera.height * 1.5;
-      camera.y = menuCamYStart - ease * 2 * panDown; // ease 0→0.5 maps to full panDown
+      // First half: pan down from start, old content exits up
+      camera.y = menuCamYStart - ease * totalDistance;
     } else {
-      // Phase 2: pan up from below to reveal menu scene
-      var t2 = (ease - 0.5) * 2; // 0→1 over second half
-      camera.y = camera.height * (1 - t2);
+      // Second half: pan from menuPhase2StartY to 0
+      var t = (ease - 0.5) * 2; // 0→1 over second half
+      camera.y = menuPhase2StartY * (1 - t);
     }
 
     camera.vy = camera.y - prevCamY;
     camera.scrollY += camera.vy;
 
-    // Midpoint: old content gone — set up new menu scene
+    // Swap at midpoint — old content off-screen, set up new menu scene
     if (!menuPanReset && menuPanProgress >= 0.5) {
       menuPanReset = true;
+
+      // Now everything is off-screen — detach rope and clean up
+      detach();
+      if (start.platformExiting) {
+        start.platformExiting = false;
+        if (start.platformSurface) {
+          removeSurface(start.platformSurface);
+          start.platformSurface = null;
+        }
+      }
 
       var savedScrollX = camera.scrollX;
       var savedScrollY = camera.scrollY;
@@ -112,6 +111,10 @@ function animateToMenu() {
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
       gamePanel.context.clearRect(0, 0, gamePanel.canvas.width, gamePanel.canvas.height);
+
+      // Reset camera.x for menu (everything was just cleaned up)
+      camera.x = 0;
+      camera.vx = 0;
 
       // Standard menu positions
       platform.posX = (camera.width / 2) - (platform.width / 2);
@@ -121,22 +124,24 @@ function animateToMenu() {
       logo.alpha = 0;
       menuAlpha = 0;
 
-      // Camera below the scene — will pan up
-      camera.y = camera.height;
+      // Camera below so all elements are off-screen below
+      menuPhase2StartY = Math.ceil((camera.height - logo.posY + 100) / parallax.logo);
+      camera.y = menuPhase2StartY;
 
       // Hide character until pan completes
       character.centerX = -9999;
       character.centerY = -9999;
+      return;
     }
 
-    // Fade in logo during phase 2
+    // Fade in logo during second half
     if (menuPanReset) {
       var fadeProgress = (menuPanProgress - 0.5) * 2;
       logo.alpha = Math.min(fadeProgress * 1.5, 1);
       menuAlpha = logo.alpha;
     }
 
-    // Pan complete
+    // Sweep complete
     if (menuPanProgress >= 1) {
       camera.y = 0;
       camera.vy = 0;
@@ -152,9 +157,9 @@ function animateToMenu() {
   }
 
 
-  // ::Stage 5 — intro: camera pans up from below to reveal menu scene
-  // Elements are at standard world positions. camera.y starts at +camera.height
-  // and pans to 0. Parallax naturally reveals everything at different rates.
+  // ::Stage 5 — intro: camera pans from below to reveal menu scene
+  // Elements at standard world positions. camera.y starts large positive
+  // (everything off-screen below) and pans to 0. Parallax reveals naturally.
   if (menuStage === 5) {
 
     menuEntryProgress += (1 / 240) * dt; // ~4 seconds at 60fps
@@ -164,9 +169,9 @@ function animateToMenu() {
     var t = menuEntryProgress;
     var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 
-    // Camera pans from +camera.height to 0
+    // Camera pans from menuCamYStart to 0
     var prevY = camera.y;
-    camera.y = camera.height * (1 - ease);
+    camera.y = menuCamYStart * (1 - ease);
     camera.vy = camera.y - prevY;
     camera.scrollY += camera.vy;
 

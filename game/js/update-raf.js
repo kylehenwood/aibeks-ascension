@@ -61,15 +61,18 @@ function runGame(timestamp) {
     animateToMenu();
     // Draw
     drawBackground();
-    // Stage 10 first half: draw old game content scrolling up
+    // Stage 10 first half: keep updating and drawing old game content
     if (menuStage === 10 && !menuPanReset) {
+      updateGame();
       var gpx = camera.x * parallax.gamePanel;
       var gpy = camera.y * parallax.gamePanel;
       canvas.context.drawImage(gamePanel.canvas, gpx, gpy);
+      canvas.context.drawImage(clickAreas.canvas, gpx, gpy);
       canvas.context.save();
       canvas.context.translate(gpx, gpy);
       drawCharacter(canvas.context);
       canvas.context.restore();
+      drawExitingPlatform(canvas.context);
     }
     drawForeground(canvas.context,true);
     // Draw menu scene (stage 5, stage 10 after cleanup, and later stages)
