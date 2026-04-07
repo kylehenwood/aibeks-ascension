@@ -801,7 +801,7 @@ html {
   width: 800px;
   height: 700px;
   background: #0e0e2b;
-  /*border: 1px solid #000;*/
+  border: 4px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 
 .viewport--iphone4 {

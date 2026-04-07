@@ -24,32 +24,36 @@ function backToMenu() {
   }
 
   if (menuFirstLoad) {
-    // First time — slow pan down from stars to reveal everything
+    // First time — menu scene at standard positions, camera starts below, pans up
     menuFirstLoad = false;
     camera.target = null;
-    camera.y = camera.height;
     camera.vy = 0;
     gameSetup();
+
+    // Standard menu positions
+    platform.posX = (camera.width / 2) - (platform.width / 2);
+    platform.posY = (camera.height / 2) - (platform.height / 2) + 120;
+    logo.posX = (camera.width/2)-(logo.width/2);
+    logo.posY = (camera.height / 2) - (logo.height / 2) - 120;
+    logo.alpha = 0;
+    menuAlpha = 0;
+
+    // Camera starts below so all elements are off-screen above
+    camera.y = camera.height;
     menuEntryProgress = 0;
     menuStage = 5; // intro pan stage
   } else {
-    // Returning from gameplay — pan camera straight down to a new platform
+    // Returning from gameplay — two-phase pan:
+    // Phase 1 (stage 10): pan down to push old content off-screen
+    // Phase 2 (stage 11): create new menu scene, pan up to reveal it
     camera.target = null;
     detach();
 
-    // Snap camera.x to 0 so the pan is purely vertical
+    // Snap camera.x to 0 for a purely vertical pan
     camera.x = 0;
     camera.vx = 0;
 
-    // Place platform centered on screen, far below in world Y.
-    // Camera pans down (negative camera.y) to reveal it.
-    platform.posX = (camera.width / 2) - (platform.width / 2);
-    var menuPosY = (camera.height / 2) - (platform.height / 2) + 120;
-    var panDist = camera.height * 1.2;
-    platform.posY = menuPosY + panDist; // off-screen below at camera.y = 0
-
     menuCamYStart = camera.y;
-    menuPanTargetY = -panDist;
     menuPanProgress = 0;
     menuPanReset = false;
     menuStage = 10;
@@ -70,61 +74,76 @@ var charFallVY = 0;
 // once complete it transitions to gameMenu state.
 function animateToMenu() {
 
-  // ::Stage 10 — pan camera down to new platform (returning from gameplay)
+  // ::Stage 10 — back to menu: pan down past old content, then up to new menu
   //
-  // Platform is placed far below the screen. Camera pans down (camera.y goes
-  // negative) so old game content scrolls up and off-screen while the platform
-  // rises into view from below. No midpoint swap — one continuous motion.
+  // Phase 1: camera.y goes negative — old content scrolls up and off-screen.
+  // At midpoint: clean up, reset menu elements to standard positions,
+  //              set camera.y to +camera.height (below the menu scene).
+  // Phase 2: camera.y pans from +camera.height to 0 — menu enters from above.
+  // Parallax handles all element positioning naturally.
   if (menuStage === 10) {
-    menuPanProgress += (1 / 180) * dt; // ~3 seconds at 60fps
+    var totalDuration = 240; // ~4 seconds total at 60fps
+    menuPanProgress += (1 / totalDuration) * dt;
     if (menuPanProgress > 1) menuPanProgress = 1;
 
-    // Sine ease: slow → fast → slow
     var ease = (1 - Math.cos(menuPanProgress * Math.PI)) / 2;
-
     var prevCamY = camera.y;
 
-    // Pan camera.y straight down to bring platform into view
-    camera.y = menuCamYStart + (menuPanTargetY - menuCamYStart) * ease;
+    if (!menuPanReset) {
+      // Phase 1: pan down — old content exits upward
+      var panDown = camera.height * 1.5;
+      camera.y = menuCamYStart - ease * 2 * panDown; // ease 0→0.5 maps to full panDown
+    } else {
+      // Phase 2: pan up from below to reveal menu scene
+      var t2 = (ease - 0.5) * 2; // 0→1 over second half
+      camera.y = camera.height * (1 - t2);
+    }
 
     camera.vy = camera.y - prevCamY;
     camera.scrollY += camera.vy;
 
-    // Clean up old game data once it has scrolled off-screen
-    if (!menuPanReset && menuPanProgress >= 0.4) {
+    // Midpoint: old content gone — set up new menu scene
+    if (!menuPanReset && menuPanProgress >= 0.5) {
       menuPanReset = true;
+
       var savedScrollX = camera.scrollX;
       var savedScrollY = camera.scrollY;
       clearVariables();
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
+      gamePanel.context.clearRect(0, 0, gamePanel.canvas.width, gamePanel.canvas.height);
+
+      // Standard menu positions
+      platform.posX = (camera.width / 2) - (platform.width / 2);
+      platform.posY = (camera.height / 2) - (platform.height / 2) + 120;
+      logo.posX = (camera.width/2)-(logo.width/2);
+      logo.posY = (camera.height / 2) - (logo.height / 2) - 120;
+      logo.alpha = 0;
+      menuAlpha = 0;
+
+      // Camera below the scene — will pan up
+      camera.y = camera.height;
+
       // Hide character until pan completes
       character.centerX = -9999;
       character.centerY = -9999;
     }
 
-    // Logo fades in during second half
-    if (menuPanProgress > 0.5) {
+    // Fade in logo during phase 2
+    if (menuPanReset) {
       var fadeProgress = (menuPanProgress - 0.5) * 2;
       logo.alpha = Math.min(fadeProgress * 1.5, 1);
       menuAlpha = logo.alpha;
-
-      var context = canvas.context;
-      context.save();
-      context.globalAlpha = logo.alpha;
-      context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y);
-      context.restore();
     }
 
-    // Pan complete — snap to final menu positions
+    // Pan complete
     if (menuPanProgress >= 1) {
-      platform.posY = (camera.height / 2) - (platform.height / 2) + 120;
       camera.y = 0;
       camera.vy = 0;
       logo.alpha = 1;
       menuAlpha = 1;
 
-      // Character spawns above camera, will fall onto platform
+      // Character falls from sky onto platform
       character.centerX = platform.posX + platform.width / 2;
       character.centerY = -character.size;
       charFallVY = 0;
@@ -133,7 +152,9 @@ function animateToMenu() {
   }
 
 
-  // ::Stage 5 — intro: slow pan down from stars to reveal logo, platform + clouds
+  // ::Stage 5 — intro: camera pans up from below to reveal menu scene
+  // Elements are at standard world positions. camera.y starts at +camera.height
+  // and pans to 0. Parallax naturally reveals everything at different rates.
   if (menuStage === 5) {
 
     menuEntryProgress += (1 / 240) * dt; // ~4 seconds at 60fps
@@ -143,35 +164,29 @@ function animateToMenu() {
     var t = menuEntryProgress;
     var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 
-    // Camera pans from +camera.height to 0 (below → up to reveal platform)
+    // Camera pans from +camera.height to 0
     var prevY = camera.y;
     camera.y = camera.height * (1 - ease);
     camera.vy = camera.y - prevY;
     camera.scrollY += camera.vy;
 
-    // Fade in elements as they come into view (start fading at 30%)
-    var fadeT = Math.max(0, (menuEntryProgress - 0.3) / 0.7);
-    logo.alpha = Math.min(fadeT * 1.5, 1);
-    menuAlpha = Math.min(fadeT * 1.5, 1);
+    // Fade in logo
+    logo.alpha = Math.min(ease * 1.5, 1);
+    menuAlpha = logo.alpha;
 
-    var context = canvas.context;
-
-    // Title — farthest back (behind clouds)
-    context.save();
-    context.globalAlpha = logo.alpha;
-    context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY + camera.y * 1.1);
-    context.restore();
-
-    // Platform drawn by drawPlatformScene in RAF with camera.y parallax
+    // Position character on platform (follows platform parallax)
+    var platScreenY = platform.posY + platform.hover + camera.y * parallax.platform;
+    character.centerX = platform.posX + platform.width / 2;
+    character.centerY = platScreenY + 26 - character.size / 2;
 
     if (menuEntryProgress >= 1) {
       camera.y = 0;
       camera.vy = 0;
-      // Character falls from sky onto platform
+      logo.alpha = 1;
+      menuAlpha = 1;
       character.centerX = platform.posX + platform.width / 2;
-      character.centerY = -character.size;
-      charFallVY = 0;
-      menuStage = 6;
+      character.centerY = platform.posY + 26 - character.size / 2;
+      menuStage = 3;
     }
   }
 
@@ -186,7 +201,7 @@ function animateToMenu() {
 
     // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
-    context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY);
+    context.drawImage(logo.canvas, logo.posX, logo.posY);
 
     // Landed on platform
     if (character.centerY >= landingY) {
@@ -215,7 +230,7 @@ function animateToMenu() {
     // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
     context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
-    context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY);
+    context.drawImage(logo.canvas, logo.posX, logo.posY);
 
     if (playButton.alpha >= 1 && playButton.progress >= 100) {
       setPlayButton();

@@ -61,7 +61,7 @@ function runGame(timestamp) {
     animateToMenu();
     // Draw
     drawBackground();
-    // Stage 10: draw old game content scrolling out (before cleanup)
+    // Stage 10 first half: draw old game content scrolling up
     if (menuStage === 10 && !menuPanReset) {
       var gpx = camera.x * parallax.gamePanel;
       var gpy = camera.y * parallax.gamePanel;
@@ -72,13 +72,15 @@ function runGame(timestamp) {
       canvas.context.restore();
     }
     drawForeground(canvas.context,true);
-    // Draw platform — during camera pans (stages 5, 10), cancel out parallax
-    // so the platform moves 1:1 with the camera
-    var panning = (menuStage === 5 || menuStage === 10);
-    var menuPlatOffset = panning ? camera.y / parallax.platform : camera.y;
-    drawPlatformScene(canvas.context, menuPlatOffset);
-    // Character for non-pan stages (falling onto platform, landed)
-    if (menuStage !== 10) {
+    // Draw menu scene (stage 5, stage 10 after cleanup, and later stages)
+    if (!(menuStage === 10 && !menuPanReset)) {
+      drawPlatformScene(canvas.context, camera.y);
+      if (logo.alpha > 0) {
+        canvas.context.save();
+        canvas.context.globalAlpha = logo.alpha;
+        canvas.context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * parallax.logo);
+        canvas.context.restore();
+      }
       drawCharacter(canvas.context);
     }
     drawGameOverlay(canvas.context,'fade-out');
