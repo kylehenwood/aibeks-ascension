@@ -44,16 +44,15 @@ function updateMenu() {
 
   context.clearRect(0, 0, camera.width, camera.height);
 
-  // Position character on the platform surface
-  var hoverY = platform.posY + platform.hover;
-  character.centerX = platform.posX + platform.width / 2;
-  character.centerY = hoverY + 26 - character.size / 2;
-
   // title (behind platform)
-  context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY);
+  context.drawImage(logo.canvas, logo.posX, logo.posY);
 
-  // platform scene (drawn by RAF, not here — we just draw logo, character, buttons)
+  // platform scene — also ticks hover animation
   drawPlatformScene(context);
+
+  // Position character on platform AFTER hover has been updated
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
 
   // Draw character on platform
   drawCharacter(context);

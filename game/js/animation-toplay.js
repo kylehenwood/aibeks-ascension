@@ -76,9 +76,7 @@ function drawExitingPlatform(context) {
   var platScreenX = start.platformStartX + camera.x * exitParallax;
   var platScreenY = platform.posY + platform.hover + camera.y * exitParallax;
   // Off screen — stop drawing and remove collision surface
-  // Use camera.x directly (1:1) for the exit check so wide canvases don't keep it alive too long
-  var checkX = start.platformStartX + camera.x;
-  if (checkX + platform.width < -100 || platScreenY > camera.height + 200 || platScreenY + platform.height < -200) {
+  if (platScreenX + platform.width < -100 || platScreenY > camera.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
     removeSurface(start.platformSurface);
     start.platformSurface = null;
@@ -124,9 +122,9 @@ function updateStart() {
     start.progress += 0.004 * dt;
     if (start.progress > 1) start.progress = 1;
 
-    // sine ease — slow start, smooth acceleration, gentle stop
+    // easeInOutCubic — gentle start, smooth middle, soft stop
     var t = start.progress;
-    var ease = (1 - Math.cos(t * Math.PI)) / 2;
+    var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 
     // pan camera from platform toward first star
     var prevCamX = camera.x;

@@ -43,6 +43,11 @@ function backToMenu() {
     // Everything cleaned up at midpoint when off-screen.
     camera.target = null;
 
+    // Pre-calculate the clearance needed to push all menu elements off-screen.
+    // Logo (parallax 0.3) is the bottleneck — needs the most camera.y to hide.
+    var logoStdY = (camera.height / 2) - (logo.height / 2) - 120;
+    menuPhase2StartY = Math.ceil((camera.height - logoStdY + 100) / parallax.logo);
+
     menuCamYStart = camera.y;
     menuPanProgress = 0;
     menuPanReset = false;
@@ -70,22 +75,24 @@ function animateToMenu() {
   // Phase 1: old content exits upward.
   // Phase 2: new menu scene enters from below via parallax.
   if (menuStage === 10) {
-    var clearance = camera.height * 1.5;
+    var clearance = menuPhase2StartY;
     var totalDistance = clearance * 2;
 
-    menuPanProgress += (1 / 180) * dt; // ~3 seconds — matches restart
+    menuPanProgress += (1 / 240) * dt; // ~4 seconds — gentle transition
     if (menuPanProgress > 1) menuPanProgress = 1;
 
-    var ease = (1 - Math.cos(menuPanProgress * Math.PI)) / 2;
+    // easeInOutCubic — gentle start, smooth middle, soft landing
+    var t = menuPanProgress;
+    var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
     var prevCamY = camera.y;
 
     if (!menuPanReset) {
       // First half: pan down from start, old content exits up
       camera.y = menuCamYStart - ease * totalDistance;
     } else {
-      // Second half: pan from menuPhase2StartY to 0
+      // Second half: pan from +clearance down to 0
       var t = (ease - 0.5) * 2; // 0→1 over second half
-      camera.y = menuPhase2StartY * (1 - t);
+      camera.y = clearance * (1 - t);
     }
 
     camera.vy = camera.y - prevCamY;
@@ -125,8 +132,7 @@ function animateToMenu() {
       menuAlpha = 0;
 
       // Camera below so all elements are off-screen below
-      menuPhase2StartY = Math.ceil((camera.height - logo.posY + 100) / parallax.logo);
-      camera.y = menuPhase2StartY;
+      camera.y = clearance;
 
       // Hide character until pan completes
       character.centerX = -9999;
@@ -190,7 +196,7 @@ function animateToMenu() {
       logo.alpha = 1;
       menuAlpha = 1;
       character.centerX = platform.posX + platform.width / 2;
-      character.centerY = platform.posY + 26 - character.size / 2;
+      character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
       menuStage = 3;
     }
   }
@@ -198,7 +204,7 @@ function animateToMenu() {
 
   // ::Stage 6 — character falls from sky onto platform
   if (menuStage === 6) {
-    var landingY = platform.posY + 26 - character.size / 2;
+    var landingY = platform.posY + platform.hover + 26 - character.size / 2;
 
     // Apply gravity
     charFallVY += 0.4 * dt;
@@ -228,9 +234,9 @@ function animateToMenu() {
       playButton.alpha = 1;
     }
 
-    // Position character on platform (must match updateMenu position)
+    // Position character on platform (hover already ticked by drawPlatformScene in RAF)
     character.centerX = platform.posX + platform.width / 2;
-    character.centerY = platform.posY + 26 - character.size / 2;
+    character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
 
     // Platform drawn by drawPlatformScene in RAF
     var context = canvas.context;
