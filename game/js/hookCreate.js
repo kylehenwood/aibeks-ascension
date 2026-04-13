@@ -1,10 +1,12 @@
 // create a hook along with a canvas it is drawn on.
-function createHook(position,isSafe) {
+function createHook(col, row, isSafe, chunkIndex) {
+  var pos = gridPosAt(col, row);
+
   // create a mini canvas for a hook, and add it to an array of hooks.
   var canvas = document.createElement('canvas');
       canvas.width = 64;
       canvas.height = 64;
-  var context = canvas.getContext('2d'); // Pass the context to draw the star
+  var context = canvas.getContext('2d');
   var hookPosition = starHooks.length;
 
   var star = {
@@ -13,39 +15,36 @@ function createHook(position,isSafe) {
     size: 6,
     strokeOffset: 16,
     bounds: 64,
-    ring: 2, // ring position / health
+    ring: 2,
     alive: true,
-    safe: isSafe, //position in array
+    safe: isSafe,
     index: hookPosition
   }
 
-  // draw the hook.. if I could
-  // drawHook(context,star,false);
-
   var hookSize = 64;
 
-  // push hook into array
   starHooks.push({
-    layer:canvas,
+    layer: canvas,
     context: context,
     star: star,
     size: hookSize,
     selected: false,
-    posX: gridPositions[position].positionX,
-    posY: gridPositions[position].positionY,
-    centerX: gridPositions[position].positionX+(hookSize/2),
-    centerY: gridPositions[position].positionY+(hookSize/2)
+    posX: pos.positionX,
+    posY: pos.positionY,
+    centerX: pos.positionX + (hookSize / 2),
+    centerY: pos.positionY + (hookSize / 2),
+    chunkIndex: chunkIndex !== undefined ? chunkIndex : 0
   });
 
-  // draw the hook.. if I could
   drawHook(starHooks[hookPosition]);
 
   // clickable areas
-  var clickyBounds = 64;
+  var clickyBounds = 32;
   elements.push({
-    posX: gridPositions[position].positionX-clickyBounds,
-    posY: gridPositions[position].positionY-clickyBounds,
-    size: 64+(clickyBounds*2),
-    index: hookPosition
+    posX: pos.positionX - clickyBounds,
+    posY: pos.positionY - clickyBounds,
+    size: 64 + (clickyBounds * 2),
+    index: hookPosition,
+    chunkIndex: chunkIndex !== undefined ? chunkIndex : 0
   });
 }

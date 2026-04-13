@@ -22,11 +22,7 @@ function setupMenuMouse() {
   var el = canvas.id;
 
   function toCanvas(e) {
-    var rect = el.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) * (camera.width / rect.width),
-      y: (e.clientY - rect.top) * (camera.height / rect.height)
-    };
+    return screenToCamera(e.clientX, e.clientY);
   }
 
   function updateHover(pos) {
@@ -70,6 +66,11 @@ function setupMenuMouse() {
     menuMouse.active = false;
   });
 }
+function repositionPlayButton() {
+  playButton.posX = (camera.width / 2) - (playButton.width / 2);
+  playButton.posY = (camera.height / 2) + 240;
+}
+
 function createPlayButton(data){
   playButton.posX = (camera.width/2)-(240/2),
   playButton.posY = (camera.height/2)+240,
@@ -437,7 +438,7 @@ function drawIsland(context, width, height) {
   context.quadraticCurveTo(270, topY + 120, 290, topY + 70);
   context.quadraticCurveTo(310, topY + 30, 305, topY + 8);
   context.closePath();
-  context.fillStyle = 'rgba(255,255,255,0.2)';
+  context.fillStyle = '#413a59';
   context.fill();
 
   // mid rock layer
@@ -449,7 +450,7 @@ function drawIsland(context, width, height) {
   context.quadraticCurveTo(200, topY + 195, 230, topY + 145);
   context.quadraticCurveTo(260, topY + 90, 280, topY + 40);
   context.closePath();
-  context.fillStyle = 'rgba(255,255,255,0.15)';
+  context.fillStyle = '#5e5872';
   context.fill();
 
   // deep rock layer (near the tip)
@@ -459,11 +460,11 @@ function drawIsland(context, width, height) {
   context.quadraticCurveTo(cx, bottomY, 180, topY + 230);
   context.quadraticCurveTo(210, topY + 180, 240, topY + 120);
   context.closePath();
-  context.fillStyle = 'rgba(255,255,255,0.1)';
+  context.fillStyle = '#6e6980';
   context.fill();
 
   // -- vein/crack patterns through the rock
-  context.strokeStyle = 'rgba(255,255,255,0.1)';
+  context.strokeStyle = '#585373';
   context.lineWidth = 2;
 
   // central vein
@@ -497,7 +498,7 @@ function drawIsland(context, width, height) {
   context.stroke();
 
   // -- edge highlights
-  context.strokeStyle = 'rgba(255,255,255,0.07)';
+  context.strokeStyle = '#4e4865';
   context.lineWidth = 3;
 
   context.beginPath();
@@ -531,7 +532,7 @@ function drawIsland(context, width, height) {
   context.quadraticCurveTo(100, topY - 10, 60, topY - 2);
   context.quadraticCurveTo(20, topY - 6, 6, topY + 12);
   context.closePath();
-  context.fillStyle = 'rgba(255,255,255,0.65)';
+  context.fillStyle = '#cccbd3';
   context.fill();
 
   // bright top edge
@@ -550,7 +551,7 @@ function drawIsland(context, width, height) {
   context.fill();
 
   // hanging vine strands
-  context.strokeStyle = 'rgba(255,255,255,0.4)';
+  context.strokeStyle = '#8d899b';
   context.lineWidth = 2;
 
   context.beginPath();
@@ -583,7 +584,7 @@ function drawIsland(context, width, height) {
 
   // -- campfire (left of center)
   var fireX = cx - 50;
-  context.fillStyle = 'rgba(255,255,255,0.5)';
+  context.fillStyle = '#b8b5c4';
   context.save();
   context.translate(fireX - 10, topY - 1);
   context.rotate(-0.3);
@@ -597,7 +598,7 @@ function drawIsland(context, width, height) {
   context.restore();
 
   // stone ring
-  context.fillStyle = 'rgba(255,255,255,0.3)';
+  context.fillStyle = '#a09dae';
   for (var si = 0; si < 5; si++) {
     var sa = (si / 5) * Math.PI * 2;
     var sx = fireX + Math.cos(sa) * 14 - 2;
@@ -661,19 +662,24 @@ function drawCampfireFlames(context, cx, baseY, time, scale) {
   var s = scale || 1;
   context.save();
 
+  // Clip to top half only (above baseY)
+  context.beginPath();
+  context.rect(cx - 40 * s, baseY - 60 * s, 80 * s, 60 * s);
+  context.clip();
+
   // simple flickering glow
   var flicker = Math.sin(time * 3.5) * 0.15 + 0.45;
   var glowSize = 8 * s;
   context.fillStyle = 'rgba(255,255,255,' + flicker + ')';
   context.beginPath();
-  context.arc(cx, baseY - glowSize * 0.5, glowSize, 0, Math.PI * 2);
+  context.arc(cx, baseY, glowSize, 0, Math.PI * 2);
   context.fill();
 
   // smaller bright core
   var coreFlicker = Math.sin(time * 5 + 1) * 0.1 + 0.6;
   context.fillStyle = 'rgba(255,255,255,' + coreFlicker + ')';
   context.beginPath();
-  context.arc(cx, baseY - glowSize * 0.4, glowSize * 0.5, 0, Math.PI * 2);
+  context.arc(cx, baseY, glowSize * 0.5, 0, Math.PI * 2);
   context.fill();
 
   // embers / sparks

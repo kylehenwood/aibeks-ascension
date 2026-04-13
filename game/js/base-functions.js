@@ -7,9 +7,9 @@ function toDeg(rad) {
     return rad * (180/Math.PI)
 }
 
-// clear canvas function
+// clear canvas function (clears full physical canvas including render scale)
 function clear(canvas) {
-    canvas.context.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.context.clearRect(0, 0, canvas.width * renderScale, canvas.height * renderScale);
 }
 
 // random function - no really

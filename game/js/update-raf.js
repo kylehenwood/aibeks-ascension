@@ -14,7 +14,9 @@ var camera = {
   targetY: 0,
   ease: 16,        // frames to reach target
   width: 1200,     // fixed gameplay viewport width
-  height: 640      // fixed gameplay viewport height
+  height: 640,     // fixed gameplay viewport height
+  offsetX: 0,      // horizontal offset to center camera in canvas (set by setupCanvas)
+  offsetY: 0       // vertical offset to center camera in canvas (set by setupCanvas)
 };
 
 function cameraFollowHook() { camera.target = 'hook'; }
@@ -42,6 +44,31 @@ function runGame(timestamp) {
 
   clear(canvas);
 
+  // Apply render scale — all subsequent drawing is in logical coordinates
+  canvas.context.save();
+  canvas.context.scale(renderScale, renderScale);
+
+  // Camera offset — centers gameplay region within the larger canvas
+  var cox = camera.offsetX;
+  var coy = camera.offsetY;
+
+  // Fullscreen: background fills entire canvas (stars visible outside camera)
+  // Viewport: background clipped to camera region only
+  if (renderMode === 'fullscreen') {
+    drawBackground();
+  }
+
+  // Set up camera region — translate + clip so all game content is confined
+  canvas.context.save();
+  canvas.context.translate(cox, coy);
+  canvas.context.beginPath();
+  canvas.context.rect(0, 0, camera.width, camera.height);
+  canvas.context.clip();
+
+  if (renderMode === 'viewport') {
+    drawBackground();
+  }
+
   switch(gameState) {
     case 'loading':
     //Update
@@ -60,22 +87,21 @@ function runGame(timestamp) {
     // Update
     animateToMenu();
     // Draw
-    drawBackground();
+    drawBackgroundClouds(canvas.context,true);
     // Stage 10 first half: draw old game content as-is (no updateGame — prevents clearing)
     if (menuStage === 10 && !menuPanReset) {
       var gpx = camera.x * parallax.gamePanel;
       var gpy = camera.y * parallax.gamePanel;
-      canvas.context.drawImage(gamePanel.canvas, gpx, gpy);
-      canvas.context.drawImage(clickAreas.canvas, gpx, gpy);
+      // Offset game panel by camera.y so stars follow the vertical sweep
+      canvas.context.save();
+      canvas.context.translate(0, gpy);
+      canvas.context.drawImage(gamePanel.canvas, 0, 0);
+      canvas.context.restore();
+      drawExitingPlatform(canvas.context);
       canvas.context.save();
       canvas.context.translate(gpx, gpy);
       drawCharacter(canvas.context);
       canvas.context.restore();
-    }
-    drawForeground(canvas.context,true);
-    // Stage 10 first half: draw exiting platform in front of clouds (matches playGame order)
-    if (menuStage === 10 && !menuPanReset) {
-      drawExitingPlatform(canvas.context);
     }
     // Draw menu scene (stage 5, stage 10 after cleanup, and later stages)
     if (!(menuStage === 10 && !menuPanReset)) {
@@ -88,6 +114,7 @@ function runGame(timestamp) {
       }
       drawCharacter(canvas.context);
     }
+    drawForeground(canvas.context,true);
     // Play button in front of clouds (stage 3 intro)
     if (menuStage === 3 && playButton.alpha > 0) {
       canvas.context.save();
@@ -103,9 +130,12 @@ function runGame(timestamp) {
     //Update
     updateMenu();
     //Draw
-    drawBackground();
-    drawForeground(canvas.context,true);
+    drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gameMenu.canvas,0,0);
+    drawForeground(canvas.context,true);
+    // Play button in front of clouds
+    renderPlayButton();
+    canvas.context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
     break;
     // Note: platform is drawn inside updateMenu via drawPlatformScene
 
@@ -114,15 +144,18 @@ function runGame(timestamp) {
     updateGame();
     updateCamera();
     // update
-    drawBackground();
-    drawCharacter(gamePanel.context);
+    drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawForeground(canvas.context,true);
-    // Platform slides off left after game starts
+    canvas.context.drawImage(gamePanel.canvas,0,0);
+    // Platform behind foreground clouds (same z-index as menu)
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
+    // Character drawn after foreground so it's always in front of parallax
+    canvas.context.save();
+    canvas.context.translate(gpx, gpy);
+    drawCharacter(canvas.context);
+    canvas.context.restore();
     // Off-screen star indicator
     drawNextStarIndicator(canvas.context);
     // pause icon
@@ -143,14 +176,22 @@ function runGame(timestamp) {
       updateGame();
     }
     //draw
-    drawBackground();
-    drawCharacter(gamePanel.context);
+    drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawForeground(canvas.context,true);
+    // Offset game panel by camera.y so stars follow the vertical sweep
+    canvas.context.save();
+    canvas.context.translate(0, gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
+    canvas.context.restore();
+    // Platform behind foreground clouds (same z-index as menu)
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
+    // Character drawn after foreground so it's always in front of parallax
+    canvas.context.save();
+    canvas.context.translate(gpx, gpy);
+    drawCharacter(canvas.context);
+    canvas.context.restore();
     if (restartPhase !== 'falling') {
       drawGameOverlay(canvas.context,'fade-out');
     }
@@ -160,31 +201,28 @@ function runGame(timestamp) {
     case 'starting':
     updateGame();
     //draw
-    drawBackground();
+    drawBackgroundClouds(canvas.context,true);
     // Draw game panel (stars) with fade
     canvas.context.save();
     canvas.context.globalAlpha = hookAlpha;
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     canvas.context.restore();
+    // Platform behind foreground clouds (same z-index as menu)
+    drawStartPlatform();
     drawForeground(canvas.context,true);
-    // Draw platform, character, logo (on top of everything)
+    // Character, logo, button outro (in front of clouds)
     updateStart();
     break;
 
 
     case 'gameOver':
     camera.vx = 0;
+    updateGameOver();
     //draw
-    drawBackground();
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawForeground(canvas.context,true);
+    drawBackgroundClouds(canvas.context,true);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
     canvas.context.drawImage(gameOver.canvas,0,0);
     break;
@@ -198,26 +236,19 @@ function runGame(timestamp) {
     // Accumulate horizontal scroll for background parallax (no vertical — bob is cosmetic)
     camera.scrollX += camera.vx * dt;
     //draw
-    drawBackground();
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawForeground(canvas.context,true);
+    drawBackgroundClouds(canvas.context,true);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
-    drawCharacter(canvas.context);
     break;
 
 
     case 'gamePaused':
     camera.vx = 0;
     //draw
-    drawBackground();
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    drawBackgroundClouds(canvas.context,false);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     break;
@@ -225,11 +256,8 @@ function runGame(timestamp) {
 
     case 'gameResume':
     //draw
-    drawBackground();
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    drawBackgroundClouds(canvas.context,false);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     // pause icon
@@ -238,11 +266,19 @@ function runGame(timestamp) {
 
   }
 
-  //console.log(starCameraY);
-  //console.log(cameraY);
-  //console.log('-----');
-  // paint UI
+  // UI drawn inside the clipped camera region
   updateInterface();
+
+  // Restore from camera clip
+  canvas.context.restore();
+
+  // Camera region border (in canvas-space, outside clip)
+  canvas.context.strokeStyle = '#fff';
+  canvas.context.lineWidth = 4;
+  canvas.context.strokeRect(cox, coy, camera.width, camera.height);
+
+  // Restore render scale
+  canvas.context.restore();
 }
 
 

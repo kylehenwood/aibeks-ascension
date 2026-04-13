@@ -43,6 +43,10 @@ function backToMenu() {
     // Everything cleaned up at midpoint when off-screen.
     camera.target = null;
 
+    // Position character at horizontal center, well below camera
+    character.centerX = -camera.x + camera.width / 2;
+    character.centerY = camera.height + 1200;
+
     // Pre-calculate the clearance needed to push all menu elements off-screen.
     // Logo (parallax 0.3) is the bottleneck — needs the most camera.y to hide.
     var logoStdY = (camera.height / 2) - (logo.height / 2) - 120;
@@ -98,6 +102,17 @@ function animateToMenu() {
     camera.vy = camera.y - prevCamY;
     camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
+
+    // Character floats through the transition with a sine wave (+400 to -400 from center)
+    var charScreenY = 560 + Math.sin(menuPanProgress * Math.PI * 2 + Math.PI / 2) * 640;
+    if (charScreenY < -character.size) {
+      // Once above the camera, remove from view for the rest of the transition
+      character.centerX = -9999;
+      character.centerY = -9999;
+    } else if (character.centerX !== -9999) {
+      character.centerX = -camera.x + camera.width / 2;
+      character.centerY = charScreenY - camera.y;
+    }
 
     // Swap at midpoint — old content off-screen, set up new menu scene
     if (!menuPanReset && menuPanProgress >= 0.5) {

@@ -4,10 +4,12 @@
 
 var autoplay = {
   enabled: false,
+  mode: 'release',       // 'release' = detach & fly, 'chain' = grapple at end of swing
   accuracy: 90,          // 80-100, how close to optimal release angle (%)
   waiting: false,        // true while falling and looking for next star
   detachAngle: null,     // the randomised target angle for this swing
-  hasDetached: false     // prevent re-detach on same swing
+  hasDetached: false,    // prevent re-detach on same swing
+  prevVx: 0              // previous frame vx for detecting swing peak (chain mode)
 };
 
 
@@ -23,6 +25,16 @@ function createAutoplayPanel() {
         '<input type="checkbox" id="autoplay-toggle">' +
         '<span>Enabled</span>' +
       '</label>' +
+      '<div class="debug-panel__slider">' +
+        '<div class="debug-panel__slider-label">' +
+          '<span>Mode</span>' +
+          '<span id="autoplay-mode-val">Release</span>' +
+        '</div>' +
+        '<select id="autoplay-mode" style="width:100%">' +
+          '<option value="release">Release</option>' +
+          '<option value="chain">Chain</option>' +
+        '</select>' +
+      '</div>' +
       '<div class="debug-panel__slider">' +
         '<div class="debug-panel__slider-label">' +
           '<span>Accuracy</span>' +
@@ -45,6 +57,13 @@ function createAutoplayPanel() {
     if (this.checked) debugGrappleAssist = true;
   });
 
+  var modeSelect = document.getElementById('autoplay-mode');
+  var modeVal = document.getElementById('autoplay-mode-val');
+  modeSelect.addEventListener('change', function() {
+    autoplay.mode = this.value;
+    modeVal.textContent = this.value === 'chain' ? 'Chain' : 'Release';
+  });
+
   var slider = document.getElementById('autoplay-accuracy');
   var sliderVal = document.getElementById('autoplay-accuracy-val');
   slider.addEventListener('input', function() {
@@ -60,11 +79,19 @@ function updateAutoplay() {
   if (!autoplay.enabled) return;
   if (gameState !== 'playGame') return;
 
-  if (character.swinging) {
-    autoplayDetach();
+  if (autoplay.mode === 'chain') {
+    if (character.swinging) {
+      autoplayChain();
+    }
   } else {
-    autoplayAttach();
+    if (character.swinging) {
+      autoplayDetach();
+    } else {
+      autoplayAttach();
+    }
   }
+
+  autoplay.prevVx = physics.vx;
 }
 
 
@@ -117,13 +144,58 @@ function autoplayDetach() {
 }
 
 
-// While falling: find the next visible alive star and grapple to it
+// Chain mode: grapple to the next star at the peak of the forward swing
+function autoplayChain() {
+  if (!physics.ropeActive || !selectedHook) return;
+  if (autoplay.hasDetached) return;
+
+  // Detect forward swing peak: vx was positive and is now dropping toward zero
+  if (autoplay.prevVx > 0.5 && physics.vx <= 0.5) {
+    // Find the furthest visible alive star ahead
+    var best = null;
+    var bestDist = -1;
+
+    for (var i = 0; i < starHooks.length; i++) {
+      var hook = starHooks[i];
+      if (!hook.star.alive) continue;
+      if (hook === selectedHook) continue;
+
+      var screenX = hook.centerX + camera.x * parallax.gamePanel;
+      if (screenX < -hook.size || screenX > camera.width + hook.size) continue;
+      var screenY = hook.centerY;
+      if (screenY < -hook.size || screenY > camera.height + hook.size) continue;
+
+      var dx = hook.centerX - character.centerX;
+      if (dx < -100) continue;
+
+      var dy = hook.centerY - character.centerY;
+      var dist = dx * dx + dy * dy;
+
+      if (dist > bestDist) {
+        bestDist = dist;
+        best = hook;
+      }
+    }
+
+    if (best) {
+      changeHook(best.star.index);
+      autoplay.hasDetached = true;
+      // Reset on next swing via prevVx cycle
+      setTimeout(function() {
+        autoplay.hasDetached = false;
+      }, 300);
+    }
+  }
+}
+
+
+// While falling: find the furthest visible alive star ahead and grapple to it
 function autoplayAttach() {
   if (character.swinging) return;
 
-  // Find the next alive star that is on-screen
+  // Find the furthest alive star ahead of the character that is on-screen
   var best = null;
-  var bestDist = Infinity;
+  var bestDist = -1;
 
   for (var i = 0; i < starHooks.length; i++) {
     var hook = starHooks[i];
@@ -135,22 +207,23 @@ function autoplayAttach() {
     var screenY = hook.centerY;
     if (screenY < -hook.size || screenY > camera.height + hook.size) continue;
 
-    // Prefer stars ahead of (or above) the character
+    // Only consider stars ahead of the character
     var dx = hook.centerX - character.centerX;
+    if (dx < -100) continue;
+
     var dy = hook.centerY - character.centerY;
     var dist = dx * dx + dy * dy;
 
-    // Skip stars behind the character (unless nothing else)
-    if (dx < -100) continue;
-
-    if (dist < bestDist) {
+    // Pick the furthest star in camera
+    if (dist > bestDist) {
       bestDist = dist;
       best = hook;
     }
   }
 
-  // Fallback: try any visible alive star including ones slightly behind
+  // Fallback: try any visible alive star (furthest first, including behind)
   if (!best) {
+    bestDist = -1;
     for (var i = 0; i < starHooks.length; i++) {
       var hook = starHooks[i];
       if (!hook.star.alive) continue;
@@ -161,7 +234,7 @@ function autoplayAttach() {
       var dx = hook.centerX - character.centerX;
       var dy = hook.centerY - character.centerY;
       var dist = dx * dx + dy * dy;
-      if (dist < bestDist) {
+      if (dist > bestDist) {
         bestDist = dist;
         best = hook;
       }

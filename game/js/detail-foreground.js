@@ -203,7 +203,17 @@ function setupForeground() {
 
 // HOW TO MAKE THE CLOUDS ENDLESS???
 
-function drawForeground(context,isAnimating) {
+// Draw just the background cloud layer (behind platform/menu content)
+function drawBackgroundClouds(context, isAnimating) {
+  var y1 = camera.y * parallax.cloud1;
+  var x1 = camera.vx * dt * parallax.cloud1;
+  if (isAnimating === true) x1 -= 0.1 * dt;
+
+  var backgroundCloudY = (camera.height - 160) + y1;
+  context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY);
+}
+
+function drawForeground(context, isAnimating) {
 
   // Cloud parallax: multipliers > 1 so clouds rush past faster than the game layer
   // This creates the "overtake" effect when the camera pans down on restart
@@ -211,21 +221,17 @@ function drawForeground(context,isAnimating) {
   var y2 = camera.y * parallax.cloud2;
   var y3 = camera.y * parallax.cloud3;
 
-  var x1 = camera.vx * dt * parallax.cloud1;
   var x2 = camera.vx * dt * parallax.cloud2;
   var x3 = camera.vx * dt * parallax.cloud3;
 
   // always drift horizontally
   if (isAnimating === true) {
-    x1 -= 0.1*dt;
     x2 -= 0.2*dt;
     x3 -= 0.3*dt;
   }
 
-  // Background cloud: static X, parallax Y only
+  // Background cloud Y (drawn separately via drawBackgroundClouds before platform)
   var backgroundCloudY = (camera.height-160)+y1;
-
-  context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY);
 
   var smallCloudY = (camera.height-200)+y2;
   cloudMove(context, smallClouds, x2, smallCloudY);
@@ -336,7 +342,7 @@ function createBackgroundCloud(posX) {
 
   backgroundCloud.context.beginPath();
   backgroundCloud.context.rect(0,80,backgroundCloud.canvas.width,280);
-  backgroundCloud.context.fillStyle = 'rgba(255,255,255,0.4)';
+  backgroundCloud.context.fillStyle = 'rgba(255,255,255,0.2)';
   backgroundCloud.context.fill();
   backgroundCloud.context.closePath();
 
@@ -396,6 +402,9 @@ function createSmallCloud(posX) {
     var cloudHeight = 8*rand(4,8);
     var cloudFill = rand(2,6)*0.1;
 
+    // Snap X to 8px grid
+    width = Math.round(width / 8) * 8;
+
     // only create the cloud if it fits inside the canvas
     if (width+cloudWidth < canvasWidth) {
       context.beginPath();
@@ -411,7 +420,7 @@ function createSmallCloud(posX) {
       sc.fillRect(width, cloudPosY, cloudWidth, cloudHeight);
       sc.clearRect(width + 4, cloudPosY + 4, cloudWidth - 8, cloudHeight - 8);
     }
-    width += cloudWidth+(12*rand(1,2));
+    width += cloudWidth + 8*rand(1,3);
   }
   smallClouds.push(smallCloud);
 }
@@ -453,6 +462,9 @@ function createTinyCloud(posX) {
     var cloudWidth = 8*rand(3,6);
     var cloudHeight = 24;
 
+    // Snap X to 8px grid
+    width = Math.round(width / 8) * 8;
+
     // only create the cloud if it fits inside the canvas
     if (width+cloudWidth < canvasWidth) {
       context.beginPath();
@@ -468,7 +480,7 @@ function createTinyCloud(posX) {
       sc.fillRect(width, cloudPosY, cloudWidth, cloudHeight);
       sc.clearRect(width + 4, cloudPosY + 4, cloudWidth - 8, cloudHeight - 8);
     }
-    width += cloudWidth+(12*rand(2,4));
+    width += cloudWidth + 8*rand(2,5);
   }
 
   tinyClouds.push(tinyCloud);

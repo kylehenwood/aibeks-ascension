@@ -12,6 +12,15 @@ var pauseMenuButton = {
   canvas: null,
   context: null
 }
+function repositionPauseButtons() {
+  pauseMenuButton.posX = 24;
+  pauseMenuButton.posY = camera.height - ((pauseMenuButton.height + 24) * 3);
+  pauseRestartButton.posX = (camera.width / 2) - (pauseRestartButton.width / 2);
+  pauseRestartButton.posY = camera.height - ((pauseRestartButton.height + 24) * 2);
+  pauseResumeButton.posX = camera.width - pauseResumeButton.width - 24;
+  pauseResumeButton.posY = camera.height - ((pauseResumeButton.height + 24) * 1);
+}
+
 function createPauseMenuButton(){
   var button = pauseMenuButton;
   button.posX = 24;

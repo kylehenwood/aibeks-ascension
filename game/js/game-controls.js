@@ -17,12 +17,9 @@ function mouseTestSetup() {
 
   // add event listener for clicks on canvas.
   elem.addEventListener('click', function(event) {
-    // Map screen pixels to canvas coordinates (accounts for CSS scaling)
-    var rect = elem.getBoundingClientRect();
-    var scaleX = camera.width / rect.width;
-    var scaleY = camera.height / rect.height;
-    var mouseX = (event.pageX - rect.left) * scaleX;
-    var mouseY = (event.pageY - rect.top) * scaleY;
+    var pos = screenToCamera(event.clientX, event.clientY);
+    var mouseX = pos.x;
+    var mouseY = pos.y;
 
     // every click, check to see if click is over any of the elements in the elements array.
     // if yes, get the index of that element, and set the current hook to that
@@ -153,16 +150,25 @@ var clickAreas = {
 }
 
 function drawClicky() {
+  // Find world bounds of all elements to size canvas appropriately
+  var maxX = 0;
+  var maxY = 0;
+  elements.forEach(function(element) {
+    var r = element.posX + element.size;
+    var b = element.posY + element.size;
+    if (r > maxX) maxX = r;
+    if (b > maxY) maxY = b;
+  });
+
   var clickCanvas = document.createElement('canvas');
-      clickCanvas.width = gamePanel.canvas.width;
-      clickCanvas.height = gamePanel.canvas.height;
-  var clickContext = clickCanvas.getContext('2d'); // Pass the context to draw the star
+      clickCanvas.width = Math.max(maxX + 64, camera.width);
+      clickCanvas.height = Math.max(maxY + 64, camera.height);
+  var clickContext = clickCanvas.getContext('2d');
 
   clickAreas.canvas = clickCanvas;
   clickAreas.context = clickContext;
 
   elements.forEach(function(element) {
-    //element.posX+camera.x;
     clickContext.fillStyle = 'rgba(0,255,0,0.1)';
     clickContext.fillRect(element.posX, element.posY, element.size, element.size);
   });

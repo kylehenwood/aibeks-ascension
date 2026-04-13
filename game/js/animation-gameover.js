@@ -9,6 +9,7 @@ function setupGameOverAnimation() {
   animateGameOver.springProgress = 0;
   camera.target = null;
   soundFalling();
+  gameOverAlpha = 0;
   updateGameOver();
 }
 

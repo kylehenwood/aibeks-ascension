@@ -1,30 +1,15 @@
-// Shift all stars so the first star center is 320px right of the platform right edge
-function positionFirstStar() {
-  var targetFirstStarX = platform.posX + platform.width + 480;
-  var shift = targetFirstStarX - starHooks[0].centerX;
-  if (shift === 0) return;
-  for (var i = 0; i < starHooks.length; i++) {
-    starHooks[i].posX += shift;
-    starHooks[i].centerX += shift;
-  }
-  for (var i = 0; i < elements.length; i++) {
-    elements[i].posX += shift;
-  }
-  for (var i = 0; i < gridPositions.length; i++) {
-    gridPositions[i].positionX += shift;
-  }
-  drawClicky();
-}
-
 function animateStart() {
   playButton.hover = false;
   playButton.pressed = false;
   canvas.id.style.cursor = '';
-  gameSetup();
+
+  // Camera at menu position, generate level with first star to the right of platform
+  camera.x = 0;
+  var firstStarTarget = platform.posX + platform.width + 480;
+  gameSetup(firstStarTarget);
+
   gameState = 'starting';
   hookAlpha = 0;
-
-  positionFirstStar();
 
   // character starts on platform (menu position — center of screen)
   var hoverY = platform.posY + platform.hover;
@@ -85,10 +70,10 @@ function drawExitingPlatform(context) {
     start.platformSurface = null;
     return;
   }
-  drawFloatingRocks(context, platScreenY, 0, platScreenX);
   context.drawImage(platform.canvas, platScreenX, platScreenY);
   var fireCx = platScreenX + platform.width * 0.3;
   drawCampfireFlames(context, fireCx, platScreenY + 32, platform.time, 1.6);
+  drawFloatingRocks(context, platScreenY, 0, platScreenX);
 }
 
 var start = {
@@ -107,6 +92,19 @@ var start = {
 }
 
 
+// Draw the platform layer during starting animation (called BEFORE foreground clouds)
+function drawStartPlatform() {
+  var context = canvas.context;
+  var platScreenX = start.platformStartX + camera.x * start.platformParallax;
+  var hoverY = platform.posY + platform.hover;
+
+  context.drawImage(platform.canvas, platScreenX, hoverY);
+  var fireCx = platScreenX + platform.width * 0.3;
+  drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
+  drawFloatingRocks(context, hoverY, 0, platScreenX);
+}
+
+// Update logic + draw overlays during starting animation (called AFTER foreground clouds)
 function updateStart() {
 
   var context = canvas.context;
@@ -157,13 +155,7 @@ function updateStart() {
     // Play button outro — line shrinks to center, text fades out
     drawPlayButtonOutro(context, ease);
 
-    // Draw platform (stationary)
-    context.drawImage(platform.canvas, platScreenX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, platScreenX);
-    var fireCx = platScreenX + platform.width * 0.3;
-    drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
-
-    // Draw character on the platform
+    // Draw character on the platform (platform drawn separately by drawStartPlatform)
     drawCharacter(context);
 
     // Stars fade in as camera pans toward them
@@ -196,12 +188,7 @@ function updateStart() {
     var hoverY = platform.posY + platform.hover;
     character.centerY = hoverY + 26 - character.size / 2;
 
-    // keep drawing platform
-    context.drawImage(platform.canvas, platScreenX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, platScreenX);
-    var fireCx = platScreenX + platform.width * 0.3;
-    drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
-
+    // Character drawn after foreground (platform drawn separately by drawStartPlatform)
     drawCharacter(context);
 
     if (start.progress >= 1) {
@@ -223,14 +210,7 @@ function updateStart() {
       character.centerY += start.hopVY * dt;
       character.centerX += 1.5 * dt;
 
-      // draw platform with camera offset
-      var platScreenX = start.platformStartX + camera.x * start.platformParallax;
-      var hoverY = platform.posY + platform.hover;
-      context.drawImage(platform.canvas, platScreenX, hoverY);
-      drawFloatingRocks(context, hoverY, 0, platScreenX);
-      var fireCx = platScreenX + platform.width * 0.3;
-      drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
-
+      // Platform drawn separately by drawStartPlatform
       drawCharacter(context);
 
       // After hop peaks and starts falling, switch to gameplay

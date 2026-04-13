@@ -12,6 +12,10 @@ function restartGame() {
   restartCamYStart = camera.y;
   camera.target = null;
   detach();
+
+  // Position character at horizontal center, well below camera
+  character.centerX = -camera.x + camera.width / 2;
+  character.centerY = camera.height + 1200;
 }
 
 // Restart animation — single continuous sweep:
@@ -51,6 +55,17 @@ function restartAnimation() {
     camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
 
+    // Character floats through the transition with a sine wave (+400 to -400 from center)
+    var charScreenY = 560 + Math.sin(restartProgress * Math.PI * 2 + Math.PI / 2) * 640;
+    if (charScreenY < -character.size) {
+      // Once above the camera, remove from view for the rest of the transition
+      character.centerX = -9999;
+      character.centerY = -9999;
+    } else if (character.centerX !== -9999) {
+      character.centerX = -camera.x + camera.width / 2;
+      character.centerY = charScreenY - camera.y;
+    }
+
     // Swap at midpoint — content is off screen, camera moving fastest
     if (!restartGameReset && restartProgress >= 0.5) {
       restartGameReset = true;
@@ -60,26 +75,15 @@ function restartAnimation() {
       var savedScrollY = camera.scrollY;
 
       clearVariables();
-      gameSetup();
 
+      // Restore camera so stars generate around where the player was
       camera.x = savedCamX;
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
 
-      // Position first star centered on screen relative to current camera.x
-      var screenCenterX = -camera.x + camera.width / 2;
-      var shift = screenCenterX - starHooks[0].centerX;
-      for (var i = 0; i < starHooks.length; i++) {
-        starHooks[i].posX += shift;
-        starHooks[i].centerX += shift;
-      }
-      for (var i = 0; i < elements.length; i++) {
-        elements[i].posX += shift;
-      }
-      for (var i = 0; i < gridPositions.length; i++) {
-        gridPositions[i].positionX += shift;
-      }
-      drawClicky();
+      // Generate new level centered on screen
+      var screenCenterX = -savedCamX + camera.width / 2;
+      gameSetup(screenCenterX);
 
       // Reposition camera so new content (at world Y=0) is below viewport
       camera.y = clearance;
@@ -105,15 +109,24 @@ function restartAnimation() {
 
   // Character falls in — gravity handled by characterFalling() in updateGame()
   if (restartPhase === 'falling') {
-    if (character.centerY >= starHooks[0].centerY + 40) {
+    // Find star closest to screen center
+    var screenCenterX = -camera.x + camera.width / 2;
+    var nearestIdx = 0;
+    var nearestDist = Infinity;
+    for (var i = 0; i < starHooks.length; i++) {
+      var d = Math.abs(starHooks[i].centerX - screenCenterX);
+      if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+    }
+
+    if (character.centerY >= starHooks[nearestIdx].centerY + 40) {
       restartPhase = 'idle';
       gameState = "playGame";
       hookAlpha = 1;
-      infiniteGen.startX = starHooks[0].centerX;
+      infiniteGen.startX = starHooks[nearestIdx].centerX;
       infiniteGen.maxDistance = 0;
       starImmunity.immune = true;
       cameraFollowHook();
-      changeHook(0);
+      changeHook(nearestIdx);
     }
   }
 }

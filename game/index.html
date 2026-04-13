@@ -348,7 +348,7 @@
       justify-content: center;
       background: #000;
     }
-    .scaled-mode .js-viewport.viewport {
+    .scaled-mode .js-viewport {
       width: 100vw !important;
       height: 100vh !important;
       margin: 0;
@@ -361,9 +361,18 @@
       height: 100vh;
       object-fit: contain;
     }
-    .scaled-mode #debug-panel,
-    .scaled-mode .layout__sidebar {
-      display: none !important;
+    /* Mobile: fill entire screen (gameplay is centered, edges are background) */
+    @media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+      .scaled-mode #js-starswinger {
+        object-fit: cover;
+      }
+    }
+    @media (max-width: 1920px) {
+      .scaled-mode #debug-panel,
+      .scaled-mode .layout__sidebar,
+      .scaled-mode #autoplay-panel {
+        display: none !important;
+      }
     }
 
     /* Autoplay panel — fixed top-right overlay */
@@ -459,7 +468,7 @@
 
 <div class="layout__container">
 
-  <div class="js-viewport viewport viewport--iphone4">
+  <div class="js-viewport">
 
     <div class="level-layout">
 
@@ -485,6 +494,7 @@
 <script type="text/javascript" src="js/base-functions.js"></script>
 <script type="text/javascript" src="js/variables.js"></script>
 <script type="text/javascript" src="js/physics.js"></script>
+<script type="text/javascript" src="js/chunk-manager.js"></script>
 
 <script type="text/javascript" src="js/start-game.js"></script>
 <script type="text/javascript" src="js/game-ui.js"></script>
@@ -543,8 +553,8 @@
   var btn = document.getElementById('fullscreen-btn');
   var body = document.body;
   var canvasEl = document.getElementById('js-starswinger');
-  var GAME_HEIGHT = 640;
-  var DEFAULT_WIDTH = 1200;
+  var GAME_HEIGHT = 1280;
+  var DEFAULT_WIDTH = 2400;
 
   function isScaled() {
     return document.fullscreenElement || body.classList.contains('scaled-mode');
@@ -572,18 +582,8 @@
     restoreDefaultCanvas();
   }
 
-  // Auto-enter scaled mode on mobile
-  var mobileQuery = window.matchMedia('(max-width: 900px)');
-  if (mobileQuery.matches) {
-    enterScaledMode();
-  }
-  mobileQuery.addEventListener('change', function(e) {
-    if (e.matches) {
-      enterScaledMode();
-    } else if (!document.fullscreenElement) {
-      exitScaledMode();
-    }
-  });
+  // Always enter scaled mode
+  enterScaledMode();
 
   // Fullscreen button
   btn.addEventListener('click', function() {
@@ -593,7 +593,7 @@
       if (rfs) {
         rfs.call(el);
       } else {
-        // iOS fallback — no fullscreen API, just use scaled mode
+        // iOS fallback — toggle scaled mode
         if (body.classList.contains('scaled-mode')) {
           exitScaledMode();
         } else {
@@ -610,19 +610,12 @@
     if (document.fullscreenElement) {
       enterScaledMode();
     } else {
-      if (!mobileQuery.matches) {
-        exitScaledMode();
-      } else {
-        // Stay in scaled mode on mobile after exiting fullscreen
-        applyScaledCanvas();
-      }
+      applyScaledCanvas();
     }
   });
 
   window.addEventListener('resize', function() {
-    if (isScaled() || mobileQuery.matches) {
-      applyScaledCanvas();
-    }
+    applyScaledCanvas();
   });
 })();
 </script>
