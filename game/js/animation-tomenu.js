@@ -96,6 +96,7 @@ function animateToMenu() {
     }
 
     camera.vy = camera.y - prevCamY;
+    camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
 
     // Swap at midpoint — old content off-screen, set up new menu scene
@@ -238,9 +239,8 @@ function animateToMenu() {
     character.centerX = platform.posX + platform.width / 2;
     character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
 
-    // Platform drawn by drawPlatformScene in RAF
+    // Logo drawn behind clouds; play button drawn after drawForeground in RAF
     var context = canvas.context;
-    context.drawImage(playButton.canvas,playButton.posX,playButton.posY);
     context.drawImage(logo.canvas, logo.posX, logo.posY);
 
     if (playButton.alpha >= 1 && playButton.progress >= 100) {

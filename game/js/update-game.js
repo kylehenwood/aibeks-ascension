@@ -48,11 +48,17 @@ function updateGame() {
     if (testingBool === true) {
       drawTrajectory(gameContext);
     }
+    if (debugGrappleAssist === true) {
+      drawGrappleAssist(gameContext);
+    }
     drawRope(gameContext);
   }
   if (character.swinging === false){
     characterFalling(gameContext);
   }
+
+  // Autoplay — runs after grapple assist computes best angle
+  updateAutoplay();
 
   // Sparkle particles (render even when rope inactive so they fade out)
   if (physics.sparkles.length > 0 && !character.swinging) {

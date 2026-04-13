@@ -10,7 +10,9 @@ var menuElems = [];
 
 function setupMenu() {
   gameState = 'gameMenu';
+  menuFirstLoad = false;
   character.centerX = camera.width/2;
+  playButton.alpha = 1;
 }
 
 // create the pause overlay
@@ -62,7 +64,8 @@ function updateMenu() {
   // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
   // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
 
-  // play button
+  // play button — re-render for hover/press state
+  renderPlayButton();
   context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
 }
 

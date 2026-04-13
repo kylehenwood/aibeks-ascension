@@ -8,7 +8,67 @@ var playButton = {
   action: 'animateStart',
   canvas: null,
   context: null,
-  progress: 0
+  progress: 0,
+  hover: false,
+  pressed: false,
+  alpha: 0,
+  hoverT: 0
+}
+
+// Menu mouse state — tracks cursor in canvas coordinates
+var menuMouse = { x: 0, y: 0, canvasX: 0, canvasY: 0, active: false };
+
+function setupMenuMouse() {
+  var el = canvas.id;
+
+  function toCanvas(e) {
+    var rect = el.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (camera.width / rect.width),
+      y: (e.clientY - rect.top) * (camera.height / rect.height)
+    };
+  }
+
+  function updateHover(pos) {
+    menuMouse.canvasX = pos.x;
+    menuMouse.canvasY = pos.y;
+    // Normalized -1 to 1 for cloud parallax
+    menuMouse.x = (pos.x / camera.width) * 2 - 1;
+    menuMouse.y = (pos.y / camera.height) * 2 - 1;
+    menuMouse.active = true;
+
+    if (gameState !== 'gameMenu') return;
+    playButton.hover = (
+      pos.x >= playButton.posX &&
+      pos.x <= playButton.posX + playButton.width &&
+      pos.y >= playButton.posY &&
+      pos.y <= playButton.posY + playButton.height
+    );
+    el.style.cursor = playButton.hover ? 'pointer' : '';
+  }
+
+  el.addEventListener('mousemove', function(e) {
+    updateHover(toCanvas(e));
+  });
+
+  el.addEventListener('mousedown', function(e) {
+    if (gameState !== 'gameMenu') return;
+    var pos = toCanvas(e);
+    updateHover(pos);
+    if (playButton.hover) {
+      playButton.pressed = true;
+    }
+  });
+
+  el.addEventListener('mouseup', function() {
+    playButton.pressed = false;
+  });
+
+  el.addEventListener('mouseleave', function() {
+    playButton.hover = false;
+    playButton.pressed = false;
+    menuMouse.active = false;
+  });
 }
 function createPlayButton(data){
   playButton.posX = (camera.width/2)-(240/2),
@@ -23,47 +83,110 @@ function createPlayButton(data){
 
 function updatePlayButton() {
   var context = playButton.context;
-  var width = playButton.width*(playButton.progress/100);
-  var offset = (playButton.width/2)-(width/2);
 
   if (playButton.progress === 0) {
     playButton.progress = 1;
   } else {
     if (playButton.progress < 99.5) {
-      var progress = animateEaseOut(100,playButton.progress,12);
+      var progress = animateEaseOut(100, playButton.progress, 18);
       playButton.progress += progress;
     } else {
       playButton.progress = 100;
     }
   }
 
+  var t = playButton.progress / 100;
+  var lineMax = 160;
+  var width = lineMax * t;
+  var offset = (playButton.width / 2) - (width / 2);
 
-  context.clearRect(0,0,playButton.width,playButton.height);
+  // Smooth alpha curves
+  var lineAlpha = Math.min(t * 2, 1);
+  var textT = Math.max(0, (t - 0.25) / 0.75);
+  var textAlpha = textT * textT * (3 - 2 * textT); // smoothstep
+  var textSlide = (1 - textAlpha) * 14;
 
-  context.beginPath();
+  context.clearRect(0, 0, playButton.width, playButton.height);
+
+  // Line — grows from center + fades in
+  context.save();
+  context.globalAlpha = lineAlpha;
   context.fillStyle = 'white';
-  context.fillRect(offset, playButton.height/2, width, 2);
-  context.closePath();
+  context.fillRect(offset, playButton.height / 2 + 8, width, 4);
+  context.restore();
+
+  // Text — fades in + slides up into position
+  if (textAlpha > 0) {
+    context.save();
+    context.globalAlpha = textAlpha;
+    context.fillStyle = 'white';
+    context.font = 'bold 18px sans-serif';
+    context.textBaseline = 'bottom';
+    context.textAlign = 'center';
+    context.fillText('CLICK TO START', playButton.width / 2, playButton.height / 2 - 4 + textSlide);
+    context.restore();
+  }
 }
 
 function setPlayButton() {
 
   playButton.progress = 0;
+  renderPlayButton();
+}
 
+// Outro animation — reverse of intro. ease goes 0→1 over the transition.
+function drawPlayButtonOutro(context, ease) {
+  var lineProgress = 1 - ease;
+  var lineAlpha = 1 - ease;
+  var textT = Math.min(ease * 2.5, 1);
+  var textAlpha = 1 - textT * textT * (3 - 2 * textT); // inverse smoothstep
+  var textSlide = textT * textT * (3 - 2 * textT) * 14;
+
+  var lineMax = 160;
+  var w = lineMax * lineProgress;
+  var offset = (playButton.width / 2) - (w / 2);
+  var x = playButton.posX;
+  var y = playButton.posY;
+
+  // Line shrinking from edges to center + fading out
+  if (w > 0 && lineAlpha > 0) {
+    context.save();
+    context.globalAlpha = lineAlpha;
+    context.fillStyle = 'white';
+    context.fillRect(x + offset, y + playButton.height / 2 + 8, w, 4);
+    context.restore();
+  }
+
+  // Text fading out + sliding down
+  if (textAlpha > 0) {
+    context.save();
+    context.globalAlpha = textAlpha;
+    context.fillStyle = 'white';
+    context.font = 'bold 18px sans-serif';
+    context.textBaseline = 'bottom';
+    context.textAlign = 'center';
+    context.fillText('CLICK TO START', x + playButton.width / 2, y + playButton.height / 2 - 4 + textSlide);
+    context.restore();
+  }
+}
+
+function renderPlayButton() {
   var context = playButton.context;
+  var pressOffset = playButton.pressed ? 3 : 0;
 
-  context.clearRect(0,0,playButton.width,playButton.height);
-  // button text (above the line)
+  context.clearRect(0, 0, playButton.width, playButton.height);
+
+  // button text (shifts down on press)
   context.fillStyle = 'white';
   context.font = 'bold 18px sans-serif';
-  context.textBaseline="bottom";
-  context.textAlign="center";
-  context.fillText('CLICK TO START', playButton.width/2, playButton.height/2 - 4);
-  // line below text
-  context.beginPath();
-  context.fillStyle = 'white';
-  context.fillRect(0, playButton.height/2, playButton.width, 2);
-  context.closePath();
+  context.textBaseline = 'bottom';
+  context.textAlign = 'center';
+  context.fillText('CLICK TO START', playButton.width / 2, playButton.height / 2 - 4 + pressOffset);
+
+  // line below text (stays put)
+  var lineMax = 160;
+  var lineOffset = (playButton.width - lineMax) / 2;
+  context.fillRect(lineOffset, playButton.height / 2 + 8, lineMax, 4);
 }
 
 // Mode selection UI

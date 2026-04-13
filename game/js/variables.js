@@ -98,10 +98,10 @@ var parallax = {
   bgStars5: 0.7,     // close bright stars
   twinkle:  0.1,     // twinkle overlay
   gamePanel: 1.0,    // grapple stars + character (no parallax)
-  cloud1:   1.2,     // background clouds
-  cloud2:   1.5,     // small clouds
-  cloud3:   1.8,     // tiny clouds (closest)
-  platform: 1.6,     // island platform (menu only, in front)
+  cloud1:   1.16,    // background clouds
+  cloud2:   1.4,     // small clouds
+  cloud3:   1.64,    // tiny clouds (closest)
+  platform: 1.28,    // island platform (between background and small clouds)
   logo:     0.3      // title text (behind, slow drift)
 };
 

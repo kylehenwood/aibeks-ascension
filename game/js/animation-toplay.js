@@ -17,6 +17,9 @@ function positionFirstStar() {
 }
 
 function animateStart() {
+  playButton.hover = false;
+  playButton.pressed = false;
+  canvas.id.style.cursor = '';
   gameSetup();
   gameState = 'starting';
   hookAlpha = 0;
@@ -140,8 +143,9 @@ function updateStart() {
     character.centerX = platScreenX + platform.width / 2;
     character.centerY = hoverY + 26 - character.size / 2;
 
-    // Fade out logo — drifts slightly less than camera (background feel)
+    // Fade out logo + button glow — drifts slightly less than camera (background feel)
     start.logoAlpha = 1 - ease;
+    playButton.alpha = 1 - ease;
     if (start.logoAlpha > 0) {
       context.save();
       context.globalAlpha = start.logoAlpha;
@@ -149,6 +153,9 @@ function updateStart() {
       context.drawImage(logo.canvas, logoX, logo.posY);
       context.restore();
     }
+
+    // Play button outro — line shrinks to center, text fades out
+    drawPlayButtonOutro(context, ease);
 
     // Draw platform (stationary)
     context.drawImage(platform.canvas, platScreenX, hoverY);
@@ -172,7 +179,7 @@ function updateStart() {
 
   //----
   // State 2: Character walks to right edge of platform
-  if (start.state === 2) {
+  else if (start.state === 2) {
     start.progress += 0.02 * dt;
     if (start.progress > 1) start.progress = 1;
 
@@ -209,7 +216,7 @@ function updateStart() {
 
   //----
   // State 3: Character hops off platform, grapples to first star, transitions to gameplay
-  if (start.state === 3) {
+  else if (start.state === 3) {
     if (start.hopping) {
       // Small hop arc (screen coordinates)
       start.hopVY += 0.25 * dt;

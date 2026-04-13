@@ -13,7 +13,7 @@ var galaxyMaskCanvas;
 function isInCloud(screenX, screenY) {
   // Check each cloud layer
   var layers = [
-    { clouds: backgroundClouds, baseY: (camera.height - 200) + camera.y * parallax.cloud1 },
+    { clouds: backgroundClouds, baseY: (camera.height - 160) + camera.y * parallax.cloud1 },
     { clouds: smallClouds,      baseY: (camera.height - 200) + camera.y * parallax.cloud2 },
     { clouds: tinyClouds,       baseY: (camera.height - 200) + camera.y * parallax.cloud3 }
   ];
@@ -78,6 +78,72 @@ function updateCloudParticles(context) {
   }
 }
 
+// Pre-rendered glow circles for button (masked through clouds like galaxy)
+// Cyan is the default, red appears on hover — they crossfade via hoverT
+var buttonGlowCyan;
+var buttonGlowRed;
+
+function createButtonGlowCanvas() {
+  var cx = playButton.posX + playButton.width / 2;
+  var cy = playButton.posY + playButton.height / 2;
+
+  buttonGlowCyan = document.createElement('canvas');
+  buttonGlowCyan.width = camera.width;
+  buttonGlowCyan.height = camera.height;
+  var ctxC = buttonGlowCyan.getContext('2d');
+  ctxC.filter = 'blur(80px)';
+  ctxC.fillStyle = 'cyan';
+  ctxC.beginPath();
+  ctxC.arc(cx, cy, 200, 0, Math.PI * 2);
+  ctxC.fill();
+  ctxC.filter = 'none';
+
+  buttonGlowRed = document.createElement('canvas');
+  buttonGlowRed.width = camera.width;
+  buttonGlowRed.height = camera.height;
+  var ctxR = buttonGlowRed.getContext('2d');
+  ctxR.filter = 'blur(80px)';
+  ctxR.fillStyle = 'red';
+  ctxR.beginPath();
+  ctxR.arc(cx, cy, 200, 0, Math.PI * 2);
+  ctxR.fill();
+  ctxR.filter = 'none';
+}
+
+function drawMaskedButtonGlow(context, layer, x, y) {
+  var mc = galaxyMaskCanvas.context;
+  var maskCanvas = fgGalaxyUseBorder ? layer.strokeCanvas : layer.canvas;
+  var h = playButton.hoverT;
+  var cyanAlpha = 1 - h;
+  var redAlpha = h;
+
+  // Cyan layer
+  if (cyanAlpha > 0.005) {
+    mc.clearRect(0, 0, camera.width, camera.height);
+    mc.globalCompositeOperation = 'source-over';
+    mc.globalAlpha = cyanAlpha;
+    mc.drawImage(buttonGlowCyan, 0, 0);
+    mc.globalAlpha = 1;
+    mc.globalCompositeOperation = 'destination-in';
+    mc.drawImage(maskCanvas, x, y);
+    mc.globalCompositeOperation = 'source-over';
+    context.drawImage(galaxyMaskCanvas, 0, 0);
+  }
+
+  // Red layer
+  if (redAlpha > 0.005) {
+    mc.clearRect(0, 0, camera.width, camera.height);
+    mc.globalCompositeOperation = 'source-over';
+    mc.globalAlpha = redAlpha;
+    mc.drawImage(buttonGlowRed, 0, 0);
+    mc.globalAlpha = 1;
+    mc.globalCompositeOperation = 'destination-in';
+    mc.drawImage(maskCanvas, x, y);
+    mc.globalCompositeOperation = 'source-over';
+    context.drawImage(galaxyMaskCanvas, 0, 0);
+  }
+}
+
 function setupForeground() {
   // Create the reusable compositing canvas
   galaxyMaskCanvas = document.createElement('canvas');
@@ -89,9 +155,15 @@ function setupForeground() {
 
   createSmallCloud(0);
   createSmallCloud(camera.width);
+  createSmallCloud(camera.width * 2);
+  createSmallCloud(camera.width * 3);
 
   createTinyCloud(0);
   createTinyCloud(camera.width);
+  createTinyCloud(camera.width * 2);
+  createTinyCloud(camera.width * 3);
+
+  createButtonGlowCanvas();
 }
 
 // HOW TO MAKE THE CLOUDS ENDLESS???
@@ -108,18 +180,6 @@ function drawForeground(context,isAnimating) {
   var x2 = camera.vx * dt * parallax.cloud2;
   var x3 = camera.vx * dt * parallax.cloud3;
 
-  // Mouse parallax draw offsets for clouds (menu only)
-  var mouseOffX1 = 0, mouseOffX2 = 0, mouseOffX3 = 0;
-  var mouseOffY1 = 0, mouseOffY2 = 0, mouseOffY3 = 0;
-  if (gameState === 'gameMenu' && typeof menuMouse !== 'undefined') {
-    mouseOffX1 = menuMouse.x * -20;
-    mouseOffX2 = menuMouse.x * -28;
-    mouseOffX3 = menuMouse.x * -36;
-    mouseOffY1 = menuMouse.y * -10;
-    mouseOffY2 = menuMouse.y * -14;
-    mouseOffY3 = menuMouse.y * -18;
-  }
-
   // always drift horizontally
   if (isAnimating === true) {
     x1 -= 0.1*dt;
@@ -128,29 +188,47 @@ function drawForeground(context,isAnimating) {
   }
 
   // Background cloud: static X, parallax Y only
-  var backgroundCloudY = (camera.height-200)+y1;
-  var bgOy = mouseOffY1 || 0;
+  var backgroundCloudY = (camera.height-160)+y1;
 
-  context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY + bgOy);
+  context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY);
 
   var smallCloudY = (camera.height-200)+y2;
-  cloudMove(context,smallClouds[0],smallClouds[1],x2,smallCloudY,mouseOffX2,mouseOffY2);
+  cloudMove(context, smallClouds, x2, smallCloudY);
 
   var tinyCloudY = (camera.height-200)+y3;
-  cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY,mouseOffX3,mouseOffY3);
+  cloudMove(context, tinyClouds, x3, tinyCloudY);
 
   // Foreground galaxy — either direct (in front) or masked inside clouds
   if (fgGalaxyInClouds) {
-    // Background cloud
-    drawMaskedFgGalaxy(context, backgroundClouds[0], 0, backgroundCloudY + bgOy);
-    // Small clouds (tiling pair)
-    drawMaskedFgGalaxy(context, smallClouds[0], smallClouds[0].posX + mouseOffX2, smallCloudY + mouseOffY2);
-    drawMaskedFgGalaxy(context, smallClouds[1], smallClouds[1].posX + mouseOffX2, smallCloudY + mouseOffY2);
-    // Tiny clouds (tiling pair)
-    drawMaskedFgGalaxy(context, tinyClouds[0], tinyClouds[0].posX + mouseOffX3, tinyCloudY + mouseOffY3);
-    drawMaskedFgGalaxy(context, tinyClouds[1], tinyClouds[1].posX + mouseOffX3, tinyCloudY + mouseOffY3);
+    drawMaskedFgGalaxy(context, backgroundClouds[0], 0, backgroundCloudY);
+    for (var i = 0; i < smallClouds.length; i++) {
+      drawMaskedFgGalaxy(context, smallClouds[i], smallClouds[i].posX, smallCloudY);
+    }
+    for (var i = 0; i < tinyClouds.length; i++) {
+      drawMaskedFgGalaxy(context, tinyClouds[i], tinyClouds[i].posX, tinyCloudY);
+    }
   } else {
     drawFgGalaxyToContext(context, camera.width, camera.height);
+  }
+
+  // Button glow — cyan by default, transitions to red on hover (menu only)
+  // Fades in/out with playButton.alpha so it matches button visibility
+  if (gameState === 'gameMenu' || gameState === 'menuAnimation' || gameState === 'starting') {
+    var hoverTarget = playButton.hover ? 1 : 0;
+    playButton.hoverT += (hoverTarget - playButton.hoverT) * 0.12 * dt;
+
+    if (playButton.alpha > 0.005) {
+      context.save();
+      context.globalAlpha = playButton.alpha;
+      drawMaskedButtonGlow(context, backgroundClouds[0], 0, backgroundCloudY);
+      for (var i = 0; i < smallClouds.length; i++) {
+        drawMaskedButtonGlow(context, smallClouds[i], smallClouds[i].posX, smallCloudY);
+      }
+      for (var i = 0; i < tinyClouds.length; i++) {
+        drawMaskedButtonGlow(context, tinyClouds[i], tinyClouds[i].posX, tinyCloudY);
+      }
+      context.restore();
+    }
   }
 
   // Cloud interaction particles
@@ -180,28 +258,16 @@ function drawMaskedFgGalaxy(context, layer, x, y) {
 
 // move the two cloud layers and position so they do not overlap or distance from each other
 // at any point
-function cloudMove(context,cloudLayer,cloudOther,posX,posY,drawOffX,drawOffY) {
-  cloudLayer.posX += posX;
-  cloudOther.posX += posX;
+function cloudMove(context, clouds, dx, posY) {
+  var count = clouds.length;
+  var totalWidth = count * camera.width;
 
-  if (cloudLayer.posX < -camera.width) {
-    cloudLayer.posX = cloudOther.posX+camera.width;
+  for (var i = 0; i < count; i++) {
+    clouds[i].posX += dx;
+    // Wrap around the full strip width
+    clouds[i].posX = ((clouds[i].posX + camera.width) % totalWidth + totalWidth) % totalWidth - camera.width;
+    context.drawImage(clouds[i].canvas, clouds[i].posX, posY);
   }
-  if (cloudLayer.posX > camera.width) {
-    cloudLayer.posX = cloudOther.posX-camera.width;
-  }
-  if (cloudOther.posX < -camera.width) {
-    cloudOther.posX = cloudLayer.posX+camera.width;
-  }
-  if (cloudOther.posX > camera.width) {
-    cloudOther.posX = cloudLayer.posX-camera.width;
-  }
-  var ox = drawOffX || 0;
-  var oy = drawOffY || 0;
-
-  // Draw cloud fills
-  context.drawImage(cloudLayer.canvas,cloudLayer.posX+ox,posY+oy);
-  context.drawImage(cloudOther.canvas,cloudOther.posX+ox,posY+oy);
 }
 
 
@@ -223,7 +289,7 @@ function createBackgroundCloud(posX) {
   backgroundCloud.context = backgroundCloud.canvas.getContext('2d');
 
   backgroundCloud.context.beginPath();
-  backgroundCloud.context.rect(0,140,backgroundCloud.canvas.width,160);
+  backgroundCloud.context.rect(0,80,backgroundCloud.canvas.width,280);
   backgroundCloud.context.fillStyle = 'rgba(255,255,255,0.4)';
   backgroundCloud.context.fill();
   backgroundCloud.context.closePath();
@@ -234,13 +300,13 @@ function createBackgroundCloud(posX) {
   backgroundCloud.strokeCanvas.height = 400;
   var sc = backgroundCloud.strokeCanvas.getContext('2d');
   // Gradient from blue (top) to red (bottom) — spans cloud height
-  var grad = sc.createLinearGradient(0, 140, 0, 140 + 160);
+  var grad = sc.createLinearGradient(0, 80, 0, 80 + 280);
   grad.addColorStop(0, 'rgba(255,255,255,0)');
   grad.addColorStop(1, 'rgba(255,255,255,1)');
   // Fill cloud rect then clear inset by 4px to get an inner border
   sc.fillStyle = grad;
-  sc.fillRect(0, 140, backgroundCloud.canvas.width, 160);
-  sc.clearRect(0 + 4, 140 + 4, backgroundCloud.canvas.width - 8, 160 - 8);
+  sc.fillRect(0, 80, backgroundCloud.canvas.width, 280);
+  sc.clearRect(0 + 4, 80 + 4, backgroundCloud.canvas.width - 8, 280 - 8);
 
   backgroundClouds.push(backgroundCloud);
 }

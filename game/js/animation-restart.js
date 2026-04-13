@@ -48,6 +48,7 @@ function restartAnimation() {
     }
 
     camera.vy = camera.y - prevCamY;
+    camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
 
     // Swap at midpoint — content is off screen, camera moving fastest

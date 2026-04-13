@@ -4,14 +4,15 @@
 var starLayers = [];
 var twinkleStars = [];
 var galaxyCanvas;
-var galaxyBlur = 0;
+var galaxyBlur = parseFloat(localStorage.getItem('ss_galaxyBlur')) || 0;
 var galaxyBorder = false;
 var fgGalaxyInClouds = false;
 var fgGalaxyUseBorder = false;
 
 var fgGalaxyCanvas;
-var fgGalaxyBlur = 0;
-var fgGalaxyOpacity = 1;
+var fgGalaxyBlur = parseFloat(localStorage.getItem('ss_fgGalaxyBlur')) || 0;
+var fgGalaxyOpacity = parseFloat(localStorage.getItem('ss_fgGalaxyOpacity'));
+if (isNaN(fgGalaxyOpacity)) fgGalaxyOpacity = 1;
 
 function setupBackground() {
   createGalaxyLayer();
@@ -20,6 +21,14 @@ function setupBackground() {
 }
 
 function drawBackground() {
+  // Gradient sky — deep navy to indigo/purple
+  var ctx = canvas.context;
+  var grad = ctx.createLinearGradient(0, 0, camera.width, 0);
+  grad.addColorStop(0, '#0a0a2e');
+  grad.addColorStop(1, '#1e0a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, camera.width, camera.height);
+
   drawGalaxyLayer();
   drawBackgroundStars();
 }
@@ -65,7 +74,7 @@ function createGalaxyLayer() {
   }
 
   // Draw solid white circles
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.fillStyle = 'rgba(120, 80, 200, 0.14)';
   for (var i = 0; i < galaxyBlobs.length; i++) {
     var b = galaxyBlobs[i];
     ctx.beginPath();

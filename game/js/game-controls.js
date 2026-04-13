@@ -189,8 +189,40 @@ function controls() {
           break;
 
           case 32: // spacebar
-          if (gameState === "playGame") {
-            detach();
+          if (gameState === "gameMenu") {
+            playButton.hover = true;
+            playButton.pressed = true;
+            setTimeout(function() {
+              playButton.pressed = false;
+              animateStart();
+            }, 120);
+          } else if (gameState === "gameOver") {
+            backToMenu();
+          } else if (gameState === "playGame") {
+            if (character.swinging) {
+              detach();
+            } else {
+              // Connect to closest alive star in the direction of travel
+              var movingRight = physics.vx >= 0;
+              var bestDist = Infinity;
+              var bestIndex = -1;
+              for (var i = 0; i < starHooks.length; i++) {
+                var hook = starHooks[i];
+                if (!hook.star.alive) continue;
+                if (movingRight && hook.centerX < character.centerX) continue;
+                if (!movingRight && hook.centerX > character.centerX) continue;
+                var dx = hook.centerX - character.centerX;
+                var dy = hook.centerY - character.centerY;
+                var dist = dx * dx + dy * dy;
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  bestIndex = i;
+                }
+              }
+              if (bestIndex >= 0) {
+                changeHook(bestIndex);
+              }
+            }
           }
           break;
 

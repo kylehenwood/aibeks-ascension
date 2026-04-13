@@ -23,7 +23,7 @@ function updateGameOver() {
   gameOver.context.fillStyle = 'white';
   gameOver.context.font = '24px sans-serif';
   gameOver.context.textAlign = "center";
-  gameOver.context.fillText('GAME OVER (Press "R" to restart)', camera.width/2, camera.height/2-80);
+  gameOver.context.fillText('GAME OVER', camera.width/2, camera.height/2-80);
 
   // button background
   gameOver.context.beginPath();

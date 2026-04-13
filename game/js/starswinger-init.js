@@ -10,6 +10,7 @@
   // Base
   controls();
   mouseTestSetup();
+  setupMenuMouse();
   createMenu()
 
   // setup sub canvases
@@ -23,6 +24,7 @@
   //loadAudio();
   soundToggle();
   createDebugPanel();
+  createAutoplayPanel();
 
   // point at which game starts...
   var urlHash = window.location.hash;

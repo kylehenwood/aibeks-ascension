@@ -61,9 +61,8 @@ function runGame(timestamp) {
     animateToMenu();
     // Draw
     drawBackground();
-    // Stage 10 first half: keep updating and drawing old game content
+    // Stage 10 first half: draw old game content as-is (no updateGame — prevents clearing)
     if (menuStage === 10 && !menuPanReset) {
-      updateGame();
       var gpx = camera.x * parallax.gamePanel;
       var gpy = camera.y * parallax.gamePanel;
       canvas.context.drawImage(gamePanel.canvas, gpx, gpy);
@@ -72,9 +71,12 @@ function runGame(timestamp) {
       canvas.context.translate(gpx, gpy);
       drawCharacter(canvas.context);
       canvas.context.restore();
-      drawExitingPlatform(canvas.context);
     }
     drawForeground(canvas.context,true);
+    // Stage 10 first half: draw exiting platform in front of clouds (matches playGame order)
+    if (menuStage === 10 && !menuPanReset) {
+      drawExitingPlatform(canvas.context);
+    }
     // Draw menu scene (stage 5, stage 10 after cleanup, and later stages)
     if (!(menuStage === 10 && !menuPanReset)) {
       drawPlatformScene(canvas.context, camera.y);
@@ -85,6 +87,13 @@ function runGame(timestamp) {
         canvas.context.restore();
       }
       drawCharacter(canvas.context);
+    }
+    // Play button in front of clouds (stage 3 intro)
+    if (menuStage === 3 && playButton.alpha > 0) {
+      canvas.context.save();
+      canvas.context.globalAlpha = playButton.alpha;
+      canvas.context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
+      canvas.context.restore();
     }
     drawGameOverlay(canvas.context,'fade-out');
     break;
@@ -114,6 +123,8 @@ function runGame(timestamp) {
     drawForeground(canvas.context,true);
     // Platform slides off left after game starts
     drawExitingPlatform(canvas.context);
+    // Off-screen star indicator
+    drawNextStarIndicator(canvas.context);
     // pause icon
     drawPauseIcon();
 
@@ -126,8 +137,11 @@ function runGame(timestamp) {
 
     case 'gameRestart':
     //Update
-    updateGame();
     restartAnimation();
+    // Only update game after midpoint swap (new level in place) or during falling
+    if (restartGameReset || restartPhase === 'falling') {
+      updateGame();
+    }
     //draw
     drawBackground();
     var gpx = camera.x * parallax.gamePanel;
