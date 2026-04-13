@@ -6,8 +6,8 @@ var twinkleStars = [];
 var galaxyCanvas;
 var galaxyBlur = 0;
 var galaxyBorder = false;
-var fgGalaxyDirect = true;
-var fgGalaxyInClouds = true;
+var fgGalaxyInClouds = false;
+var fgGalaxyUseBorder = false;
 
 var fgGalaxyCanvas;
 var fgGalaxyBlur = 0;
@@ -95,7 +95,7 @@ function tileGalaxy(targetCtx, galaxyImg, blur, vw, vh) {
       if (drawX + gw > 0 && drawX < vw && drawY + gh > 0 && drawY < vh) {
         targetCtx.drawImage(galaxyImg, drawX, drawY);
         if (galaxyBorder) {
-          targetCtx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+          targetCtx.strokeStyle = 'rgba(0, 100, 255, 0.8)';
           targetCtx.lineWidth = 2;
           targetCtx.strokeRect(drawX, drawY, gw, gh);
         }
