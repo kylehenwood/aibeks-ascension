@@ -5,22 +5,8 @@
 // animates the currently selected star
 function updateGame() {
 
-  // Infinite generation: spawn more stars when camera approaches the last star
-  if (starHooks.length > 0) {
-    var lastStarX = starHooks[starHooks.length - 1].posX;
-    var cameraRight = -camera.x + camera.width;
-    if (gameState === 'playGame' && cameraRight > lastStarX - camera.width * 2) {
-      generateMoreStars();
-    }
-  }
-
-  // World shift: keep canvas coordinates bounded when stars approach canvas edge
-  if (starHooks.length > 0 && starHooks[starHooks.length - 1].posX > infiniteGen.canvasWidth - camera.width * 2) {
-    shiftWorld();
-  }
-
-  // Cleanup: remove old stars far behind the camera
-  cleanupOldStars();
+  // Chunk-based generation: load/unload chunks around camera
+  chunkManager.ensureChunks(camera.x);
 
   var gameCanvas = gamePanel.canvas;
   var gameContext = gamePanel.context;

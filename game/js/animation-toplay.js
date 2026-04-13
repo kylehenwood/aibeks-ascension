@@ -1,30 +1,15 @@
-// Shift all stars so the first star center is 320px right of the platform right edge
-function positionFirstStar() {
-  var targetFirstStarX = platform.posX + platform.width + 480;
-  var shift = targetFirstStarX - starHooks[0].centerX;
-  if (shift === 0) return;
-  for (var i = 0; i < starHooks.length; i++) {
-    starHooks[i].posX += shift;
-    starHooks[i].centerX += shift;
-  }
-  for (var i = 0; i < elements.length; i++) {
-    elements[i].posX += shift;
-  }
-  for (var i = 0; i < gridPositions.length; i++) {
-    gridPositions[i].positionX += shift;
-  }
-  drawClicky();
-}
-
 function animateStart() {
   playButton.hover = false;
   playButton.pressed = false;
   canvas.id.style.cursor = '';
-  gameSetup();
+
+  // Camera at menu position, generate level with first star to the right of platform
+  camera.x = 0;
+  var firstStarTarget = platform.posX + platform.width + 480;
+  gameSetup(firstStarTarget);
+
   gameState = 'starting';
   hookAlpha = 0;
-
-  positionFirstStar();
 
   // character starts on platform (menu position — center of screen)
   var hoverY = platform.posY + platform.hover;

@@ -17,12 +17,12 @@ function mouseTestSetup() {
 
   // add event listener for clicks on canvas.
   elem.addEventListener('click', function(event) {
-    // Map screen pixels to canvas coordinates (accounts for CSS scaling)
+    // Map screen pixels to camera-space coordinates (accounts for CSS scaling + camera offset)
     var rect = elem.getBoundingClientRect();
-    var scaleX = camera.width / rect.width;
-    var scaleY = camera.height / rect.height;
-    var mouseX = (event.pageX - rect.left) * scaleX;
-    var mouseY = (event.pageY - rect.top) * scaleY;
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var mouseX = (event.pageX - rect.left) * scaleX - camera.offsetX;
+    var mouseY = (event.pageY - rect.top) * scaleY - camera.offsetY;
 
     // every click, check to see if click is over any of the elements in the elements array.
     // if yes, get the index of that element, and set the current hook to that

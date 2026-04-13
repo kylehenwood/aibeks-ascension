@@ -62,12 +62,16 @@ function setupCanvas() {
     canvas.id = document.getElementById('js-starswinger');
     canvas.context = canvas.id.getContext("2d");
 
-    canvas.width = 1200;
-    canvas.height = 640;
+    canvas.width = 2400;
+    canvas.height = 1280;
 
     // set canvas width and height.
     canvas.id.setAttribute('width', canvas.width);
     canvas.id.setAttribute('height', canvas.height);
+
+    // Camera offset — centers the gameplay region within the larger canvas
+    camera.offsetX = (canvas.width - camera.width) / 2;
+    camera.offsetY = (canvas.height - camera.height) / 2;
 }
 
 

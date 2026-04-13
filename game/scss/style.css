@@ -804,6 +804,19 @@ html {
   border: 4px solid #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
 
+.js-viewport {
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+  width: 2400px;
+  height: 1280px;
+  background: #0e0e2b; }
+
+.js-viewport #js-starswinger {
+  display: block;
+  width: 100%;
+  height: 100%; }
+
 .viewport--iphone4 {
   width: 1200px;
   height: 640px; }

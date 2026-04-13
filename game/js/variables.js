@@ -45,23 +45,26 @@ var hookGrappel = {
 
 // Setup variables
 var starHooks = [];
-var gridPositions = [];
-var gridImage;
+var gridBaseX = 0; // X origin of grid column 0, adjusted by shifts
 var gridSize = {
-  rows: 5,
-  cols: 50,
-  square: 64
+  rows: 10,
+  cols: 100,
+  square: 32
 }
 
-// Infinite level generation state
+// Compute grid cell position from column and row — no array needed
+function gridPosAt(col, row) {
+  return {
+    positionX: gridBaseX + col * gridSize.square,
+    positionY: row * gridSize.square
+  };
+}
+
+// Level state — scoring only (generation is handled by chunkManager)
 var infiniteGen = {
-  lastPosition: 0,    // last grid position index used for star placement
   startX: 0,          // character starting X for distance score
   maxDistance: 0,      // furthest distance reached (for score)
-  totalOffset: 0,     // cumulative world shift applied (for keeping coords bounded)
-  canvasWidth: 8000,  // fixed canvas width (never grows)
-  totalStars: 0,      // total stars ever generated (for difficulty, not affected by cleanup)
-  lastRow: -1         // row of last placed star (to avoid same-row placement)
+  canvasWidth: 8000   // fixed game panel canvas width
 }
 
 var character = {

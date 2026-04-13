@@ -348,7 +348,7 @@
       justify-content: center;
       background: #000;
     }
-    .scaled-mode .js-viewport.viewport {
+    .scaled-mode .js-viewport {
       width: 100vw !important;
       height: 100vh !important;
       margin: 0;
@@ -459,7 +459,7 @@
 
 <div class="layout__container">
 
-  <div class="js-viewport viewport viewport--iphone4">
+  <div class="js-viewport">
 
     <div class="level-layout">
 
@@ -485,6 +485,7 @@
 <script type="text/javascript" src="js/base-functions.js"></script>
 <script type="text/javascript" src="js/variables.js"></script>
 <script type="text/javascript" src="js/physics.js"></script>
+<script type="text/javascript" src="js/chunk-manager.js"></script>
 
 <script type="text/javascript" src="js/start-game.js"></script>
 <script type="text/javascript" src="js/game-ui.js"></script>
@@ -543,8 +544,8 @@
   var btn = document.getElementById('fullscreen-btn');
   var body = document.body;
   var canvasEl = document.getElementById('js-starswinger');
-  var GAME_HEIGHT = 640;
-  var DEFAULT_WIDTH = 1200;
+  var GAME_HEIGHT = 1280;
+  var DEFAULT_WIDTH = 2400;
 
   function isScaled() {
     return document.fullscreenElement || body.classList.contains('scaled-mode');

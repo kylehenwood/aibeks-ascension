@@ -1,7 +1,7 @@
 function clearVariables() {
-  gridPositions = [];
   elements = [];
   starHooks = [];
+  chunkManager.reset();
 
   // camera — preserve x/y position for seamless transitions
   camera.vx = 0;
@@ -28,16 +28,9 @@ function clearVariables() {
   gameMode = null;
   hookAlpha = 0;
 
-  // Reset infinite generation state
-  infiniteGen.lastPosition = 0;
+  // Reset scoring
   infiniteGen.startX = 0;
   infiniteGen.maxDistance = 0;
-  infiniteGen.totalOffset = 0;
-  infiniteGen.totalStars = 0;
-  infiniteGen.lastRow = -1;
-
-  // Reset grid to initial size for fresh generation
-  gridSize.cols = 50;
 
   // Clear all collision surfaces
   removeAllSurfaces();

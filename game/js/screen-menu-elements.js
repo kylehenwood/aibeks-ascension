@@ -24,8 +24,8 @@ function setupMenuMouse() {
   function toCanvas(e) {
     var rect = el.getBoundingClientRect();
     return {
-      x: (e.clientX - rect.left) * (camera.width / rect.width),
-      y: (e.clientY - rect.top) * (camera.height / rect.height)
+      x: (e.clientX - rect.left) * (canvas.width / rect.width) - camera.offsetX,
+      y: (e.clientY - rect.top) * (canvas.height / rect.height) - camera.offsetY
     };
   }
 

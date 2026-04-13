@@ -21,13 +21,13 @@ function setupBackground() {
 }
 
 function drawBackground() {
-  // Gradient sky — deep navy to indigo/purple
+  // Gradient sky — deep navy to indigo/purple (fills entire canvas)
   var ctx = canvas.context;
-  var grad = ctx.createLinearGradient(0, 0, camera.width, 0);
+  var grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
   grad.addColorStop(0, '#0a0a2e');
   grad.addColorStop(1, '#1e0a3a');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, camera.width, camera.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   drawGalaxyLayer();
   drawBackgroundStars();
@@ -115,7 +115,7 @@ function tileGalaxy(targetCtx, galaxyImg, blur, vw, vh) {
 
 // Draw background galaxy (white blobs behind stars)
 function drawGalaxyLayer() {
-  tileGalaxy(canvas.context, galaxyCanvas, galaxyBlur, camera.width, camera.height);
+  tileGalaxy(canvas.context, galaxyCanvas, galaxyBlur, canvas.width, canvas.height);
 }
 
 // Draw background galaxy onto an arbitrary context (for cloud masking — currently unused)
@@ -208,8 +208,11 @@ function setupBackgroundStars() {
 
 // Draw tiling background stars based on camera position
 function drawBackgroundStars() {
-  var w = camera.width;
-  var h = camera.height;
+  // Tile size is based on camera (the panel size), but we fill the full canvas
+  var tw = camera.width;
+  var th = camera.height;
+  var cw = canvas.width;
+  var ch = canvas.height;
 
   for (var l = 0; l < starLayers.length; l++) {
     var layer = starLayers[l];
@@ -218,22 +221,22 @@ function drawBackgroundStars() {
     var offsetY = camera.scrollY * depth;
 
     // Modulo wrap to a single tile offset
-    var tileX = ((offsetX % w) + w) % w;
-    var tileY = ((offsetY % h) + h) % h;
+    var tileX = ((offsetX % tw) + tw) % tw;
+    var tileY = ((offsetY % th) + th) % th;
 
-    // Draw 2x2 grid of tiles to cover viewport seamlessly
-    for (var tx = -1; tx <= 1; tx++) {
-      for (var ty = -1; ty <= 1; ty++) {
-        var drawX = tileX + tx * w;
-        var drawY = tileY + ty * h;
-        if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
+    // Draw enough tiles to cover the full canvas
+    for (var tx = -1; tx <= Math.ceil(cw / tw); tx++) {
+      for (var ty = -1; ty <= Math.ceil(ch / th); ty++) {
+        var drawX = tileX + tx * tw;
+        var drawY = tileY + ty * th;
+        if (drawX + tw > 0 && drawX < cw && drawY + th > 0 && drawY < ch) {
           canvas.context.drawImage(layer.canvas, drawX, drawY);
         }
       }
     }
   }
 
-  // Twinkle overlay — distant layer
+  // Twinkle overlay — distant layer (fills full canvas)
   var time = Date.now() / 1000;
   var twinkleOffsetX = camera.scrollX * parallax.twinkle;
   var twinkleOffsetY = camera.scrollY * parallax.twinkle;
@@ -244,14 +247,19 @@ function drawBackgroundStars() {
     var drawX = star.x + twinkleOffsetX;
     var drawY = star.y + twinkleOffsetY;
 
-    // Wrap to viewport
-    drawX = ((drawX % w) + w) % w;
-    drawY = ((drawY % h) + h) % h;
+    // Wrap to tile size, then draw at all positions covering canvas
+    drawX = ((drawX % tw) + tw) % tw;
+    drawY = ((drawY % th) + th) % th;
 
-    canvas.context.beginPath();
-    canvas.context.arc(drawX, drawY, star.size * (0.8 + 0.2 * Math.sin(time * star.speed + star.phase)), 0, Math.PI * 2, true);
-    canvas.context.closePath();
-    canvas.context.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
-    canvas.context.fill();
+    // Draw at all tiled positions that cover the full canvas
+    for (var ox = drawX; ox < cw; ox += tw) {
+      for (var oy = drawY; oy < ch; oy += th) {
+        canvas.context.beginPath();
+        canvas.context.arc(ox, oy, star.size * (0.8 + 0.2 * Math.sin(time * star.speed + star.phase)), 0, Math.PI * 2, true);
+        canvas.context.closePath();
+        canvas.context.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+        canvas.context.fill();
+      }
+    }
   }
 }

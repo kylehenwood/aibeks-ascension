@@ -60,26 +60,15 @@ function restartAnimation() {
       var savedScrollY = camera.scrollY;
 
       clearVariables();
-      gameSetup();
 
+      // Restore camera so stars generate around where the player was
       camera.x = savedCamX;
       camera.scrollX = savedScrollX;
       camera.scrollY = savedScrollY;
 
-      // Position first star centered on screen relative to current camera.x
-      var screenCenterX = -camera.x + camera.width / 2;
-      var shift = screenCenterX - starHooks[0].centerX;
-      for (var i = 0; i < starHooks.length; i++) {
-        starHooks[i].posX += shift;
-        starHooks[i].centerX += shift;
-      }
-      for (var i = 0; i < elements.length; i++) {
-        elements[i].posX += shift;
-      }
-      for (var i = 0; i < gridPositions.length; i++) {
-        gridPositions[i].positionX += shift;
-      }
-      drawClicky();
+      // Generate new level centered on screen
+      var screenCenterX = -savedCamX + camera.width / 2;
+      gameSetup(screenCenterX);
 
       // Reposition camera so new content (at world Y=0) is below viewport
       camera.y = clearance;
@@ -105,15 +94,24 @@ function restartAnimation() {
 
   // Character falls in — gravity handled by characterFalling() in updateGame()
   if (restartPhase === 'falling') {
-    if (character.centerY >= starHooks[0].centerY + 40) {
+    // Find star closest to screen center
+    var screenCenterX = -camera.x + camera.width / 2;
+    var nearestIdx = 0;
+    var nearestDist = Infinity;
+    for (var i = 0; i < starHooks.length; i++) {
+      var d = Math.abs(starHooks[i].centerX - screenCenterX);
+      if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+    }
+
+    if (character.centerY >= starHooks[nearestIdx].centerY + 40) {
       restartPhase = 'idle';
       gameState = "playGame";
       hookAlpha = 1;
-      infiniteGen.startX = starHooks[0].centerX;
+      infiniteGen.startX = starHooks[nearestIdx].centerX;
       infiniteGen.maxDistance = 0;
       starImmunity.immune = true;
       cameraFollowHook();
-      changeHook(0);
+      changeHook(nearestIdx);
     }
   }
 }

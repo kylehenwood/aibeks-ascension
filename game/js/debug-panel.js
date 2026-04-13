@@ -106,6 +106,25 @@ function createDebugPanel() {
         sliderHTML('Rope Min Length', 'debug-min-rope', '0', '200', '5', 'Shortest the rope can get via ratchet/retract. 0 = no limit')
       ) +
 
+      // Camera
+      sectionHTML('Camera',
+        '<div class="debug-panel__slider">' +
+          '<div class="debug-panel__slider-label">' +
+            '<span>Viewport<span class="debug-panel__info" data-tip="Resize the camera region to simulate different devices">i</span></span>' +
+            '<span id="debug-camera-size-val">' + camera.width + '×' + camera.height + '</span>' +
+          '</div>' +
+          '<select id="debug-camera-preset" class="debug-panel__select" style="width:100%">' +
+            '<option value="1200x640">Desktop (1200×640)</option>' +
+            '<option value="844x390">iPhone 14 (844×390)</option>' +
+            '<option value="852x393">iPhone 15 (852×393)</option>' +
+            '<option value="932x430">iPhone 15 Pro Max (932×430)</option>' +
+            '<option value="800x360">Android (800×360)</option>' +
+            '<option value="915x412">Pixel 7 (915×412)</option>' +
+            '<option value="1024x768">iPad Mini (1024×768)</option>' +
+          '</select>' +
+        '</div>'
+      ) +
+
       // Presets
       sectionHTML('Presets',
         '<div class="debug-panel__presets">' +
@@ -810,4 +829,61 @@ function initDebugControls() {
     saveDebugSettings();
     debugToast('Reset to defaults');
   });
+
+  // --- Camera viewport preset ---
+  var cameraPresetSelect = document.getElementById('debug-camera-preset');
+  var cameraSizeVal = document.getElementById('debug-camera-size-val');
+  cameraPresetSelect.addEventListener('change', function() {
+    var parts = this.value.split('x');
+    var w = parseInt(parts[0]);
+    var h = parseInt(parts[1]);
+    resizeCamera(w, h);
+    cameraSizeVal.textContent = w + '×' + h;
+  });
+}
+
+function resizeCamera(w, h) {
+  camera.width = w;
+  camera.height = h;
+  camera.offsetX = (canvas.width - camera.width) / 2;
+  camera.offsetY = (canvas.height - camera.height) / 2;
+
+  // Rebuild game panel canvas
+  gamePanel.canvas.height = h;
+  gamePanel.context = gamePanel.canvas.getContext('2d');
+
+  // Rebuild click areas
+  drawClicky();
+
+  // Rebuild overlay canvases
+  pauseCanvas.canvas.width = w;
+  pauseCanvas.canvas.height = h;
+  pauseCanvas.context = pauseCanvas.canvas.getContext('2d');
+  drawPauseState();
+
+  gameOver.canvas.width = w;
+  gameOver.canvas.height = h;
+  gameOver.context = gameOver.canvas.getContext('2d');
+
+  // Rebuild menu canvas
+  gameMenu.canvas.width = w;
+  gameMenu.canvas.height = h;
+  gameMenu.context = gameMenu.canvas.getContext('2d');
+
+  // Rebuild foreground mask canvas
+  galaxyMaskCanvas.width = w;
+  galaxyMaskCanvas.height = h;
+  galaxyMaskCanvas.context = galaxyMaskCanvas.getContext('2d');
+
+  // Rebuild button glow canvases
+  if (typeof createButtonGlowCanvas === 'function') createButtonGlowCanvas();
+
+  // Rebuild background clouds at new size
+  backgroundClouds = [];
+  smallClouds = [];
+  tinyClouds = [];
+  setupForeground();
+
+  // Rebuild background star panels and twinkles
+  setupBackgroundStars();
 }
