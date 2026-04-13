@@ -69,7 +69,7 @@ var character = {
   currentPosX: 0,
   currentPosY: 0,
   swinging: false,
-  grappelDelay:320, // ms (this should change based on the distance the character is from the hook)
+  grappelDelay:160, // ms (this should change based on the distance the character is from the hook)
   centerX: 0,
   centerY: 0,
 }
@@ -90,6 +90,7 @@ var starImmunity = {
 // < 1 = behind (moves slower than camera, appears distant)
 // > 1 = in front (moves faster than camera, appears close)
 var parallax = {
+  galaxy:   0.03,    // galaxy blobs (deepest layer)
   bgStars1: 0.05,    // very distant tiny stars
   bgStars2: 0.15,    // distant stars
   bgStars3: 0.3,     // mid stars
@@ -97,10 +98,10 @@ var parallax = {
   bgStars5: 0.7,     // close bright stars
   twinkle:  0.1,     // twinkle overlay
   gamePanel: 1.0,    // grapple stars + character (no parallax)
-  cloud1:   1.2,     // background clouds
-  cloud2:   1.5,     // small clouds
-  cloud3:   1.8,     // tiny clouds (closest)
-  platform: 1.6,     // island platform (menu only, in front)
+  cloud1:   1.16,    // background clouds
+  cloud2:   1.4,     // small clouds
+  cloud3:   1.64,    // tiny clouds (closest)
+  platform: 1.28,    // island platform (between background and small clouds)
   logo:     0.3      // title text (behind, slow drift)
 };
 

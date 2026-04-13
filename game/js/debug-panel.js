@@ -61,7 +61,9 @@ function createDebugPanel() {
         toggleHTML('Gravity', 'debug-gravity-enabled', true, 'Enable gravity during freefall and swing') +
         toggleHTML('Show Trajectory', 'debug-show-trajectory', false, 'Visualize rope points and velocity vector') +
         toggleHTML('Immunity Power-up', 'debug-star-immunity', true, 'Allow collecting immunity from safe stars') +
-        toggleHTML('Stars Can Die', 'debug-star-death', true, 'Stars become unsafe after their power drains')
+        toggleHTML('Stars Can Die', 'debug-star-death', true, 'Stars become unsafe after their power drains') +
+        toggleHTML('Grapple Assist', 'debug-grapple-assist', false, 'Show optimal release angles for maximum forward momentum') +
+        toggleHTML('Character Debug', 'debug-character-debug', false, 'Show character position, camera, velocity and state overlay')
       ) +
 
       // Physics sliders
@@ -74,6 +76,16 @@ function createDebugPanel() {
         sliderHTML('Rigidity', 'debug-rigidity', '0', '1', '0.01', 'Straightens the beam. 0 = fully flexible rope, 1 = perfectly straight moonbeam') +
         sliderHTML('Sparkle Rate', 'debug-sparkle-rate', '0', '1', '0.05', 'Chance per rope point per frame to emit a sparkle. 0 = off') +
         sliderHTML('Sparkle Life', 'debug-sparkle-life', '10', '120', '5', 'How many frames each sparkle lasts before fading out')
+      ) +
+
+      // Visual
+      sectionHTML('Visual',
+        sliderHTML('Galaxy Blur', 'debug-galaxy-blur', '0', '120', '1', 'Blur radius applied to background galaxy blobs. 0 = sharp circles') +
+        toggleHTML('Galaxy Border', 'debug-galaxy-border', false, 'Show tile borders on the galaxy layer for debugging overlap') +
+        toggleHTML('FG Galaxy In Clouds', 'debug-fg-galaxy-in-clouds', false, 'ON = galaxy masked inside cloud shapes, OFF = galaxy rendered in front of clouds') +
+        toggleHTML('FG Galaxy Use Border', 'debug-fg-galaxy-use-border', false, 'Mask with cloud borders instead of cloud fills (requires In Clouds)') +
+        sliderHTML('FG Galaxy Blur', 'debug-fg-galaxy-blur', '0', '120', '1', 'Blur radius applied to foreground galaxy blobs. 0 = sharp circles') +
+        sliderHTML('FG Galaxy Opacity', 'debug-fg-galaxy-opacity', '0', '1', '0.01', 'Opacity of the foreground galaxy blob fill')
       ) +
 
       // Stars - starts collapsed
@@ -147,28 +159,36 @@ function createDebugPanel() {
 
 // Default values to allow reset
 var debugDefaults = {
-  gravity: 0.35,
-  terminalVelocity: 14,
-  damping: 0.999,
-  ropeSegments: 6,
-  elasticity: 0.8,
-  rigidity: 0,
-  sparkleRate: 0.04,
-  sparkleLife: 60,
-  starDecayRate: 0.02,
-  retractPercent: 0.15,
-  retractSpeed: 0.03,
-  ratchet: 1.0,
-  ratchetMax: 0.5,
-  ropeMinLength: 0,
-  grappleDelay: 320,
-  grappleEase: 2.5,
+  gravity: 0.4,
+  terminalVelocity: 15,
+  damping: 1,
+  ropeSegments: 8,
+  elasticity: 1,
+  rigidity: 0.25,
+  sparkleRate: 0.1,
+  sparkleLife: 70,
+  starDecayRate: 0.005,
+  retractPercent: 0.1,
+  retractSpeed: 0.15,
+  ratchet: 0.7,
+  ratchetMax: 1,
+  ropeMinLength: 80,
+  grappleDelay: 160,
+  grappleEase: 2,
   immunityThreshold: 200,
   starDecayEnabled: true,
   gravityEnabled: true,
   showTrajectory: false,
-  immunityEnabled: true,
-  starsCanDie: true
+  immunityEnabled: false,
+  starsCanDie: true,
+  grappleAssist: false,
+  characterDebug: false,
+  galaxyBlur: 0,
+  galaxyBorder: false,
+  fgGalaxyInClouds: false,
+  fgGalaxyUseBorder: false,
+  fgGalaxyBlur: 0,
+  fgGalaxyOpacity: 1
 };
 
 var debugStarDecayRate = debugDefaults.starDecayRate;
@@ -176,6 +196,8 @@ var debugStarDecayEnabled = debugDefaults.starDecayEnabled;
 var debugGravityEnabled = debugDefaults.gravityEnabled;
 var debugImmunityEnabled = debugDefaults.immunityEnabled;
 var debugStarsCanDie = debugDefaults.starsCanDie;
+var debugGrappleAssist = debugDefaults.grappleAssist;
+var debugCharacterDebug = debugDefaults.characterDebug;
 var debugImmunityThreshold = debugDefaults.immunityThreshold;
 
 var DEBUG_STORAGE_KEY = 'starswinger-debug-settings';
@@ -204,7 +226,15 @@ function getDebugSettings() {
     gravityEnabled: debugGravityEnabled,
     showTrajectory: testingBool,
     immunityEnabled: debugImmunityEnabled,
-    starsCanDie: debugStarsCanDie
+    starsCanDie: debugStarsCanDie,
+    grappleAssist: debugGrappleAssist,
+    characterDebug: debugCharacterDebug,
+    galaxyBlur: galaxyBlur,
+    galaxyBorder: galaxyBorder,
+    fgGalaxyInClouds: fgGalaxyInClouds,
+    fgGalaxyUseBorder: fgGalaxyUseBorder,
+    fgGalaxyBlur: fgGalaxyBlur,
+    fgGalaxyOpacity: fgGalaxyOpacity
   };
 }
 
@@ -233,6 +263,14 @@ function applyDebugSettings(s) {
   if (s.showTrajectory !== undefined) testingBool = s.showTrajectory;
   if (s.immunityEnabled !== undefined) debugImmunityEnabled = s.immunityEnabled;
   if (s.starsCanDie !== undefined) debugStarsCanDie = s.starsCanDie;
+  if (s.grappleAssist !== undefined) debugGrappleAssist = s.grappleAssist;
+  if (s.characterDebug !== undefined) debugCharacterDebug = s.characterDebug;
+  if (s.galaxyBlur !== undefined) { galaxyBlur = s.galaxyBlur; localStorage.setItem('ss_galaxyBlur', galaxyBlur); }
+  if (s.galaxyBorder !== undefined) galaxyBorder = s.galaxyBorder;
+  if (s.fgGalaxyInClouds !== undefined) fgGalaxyInClouds = s.fgGalaxyInClouds;
+  if (s.fgGalaxyUseBorder !== undefined) fgGalaxyUseBorder = s.fgGalaxyUseBorder;
+  if (s.fgGalaxyBlur !== undefined) { fgGalaxyBlur = s.fgGalaxyBlur; localStorage.setItem('ss_fgGalaxyBlur', fgGalaxyBlur); }
+  if (s.fgGalaxyOpacity !== undefined) { fgGalaxyOpacity = s.fgGalaxyOpacity; localStorage.setItem('ss_fgGalaxyOpacity', fgGalaxyOpacity); }
 }
 
 // Save current settings to localStorage
@@ -280,7 +318,15 @@ function settingsToClipboard() {
     'debugGravityEnabled = ' + s.gravityEnabled + ';',
     'debugImmunityEnabled = ' + s.immunityEnabled + ';',
     'debugStarsCanDie = ' + s.starsCanDie + ';',
-    'testingBool = ' + s.showTrajectory + ';'
+    'debugGrappleAssist = ' + s.grappleAssist + ';',
+    'debugCharacterDebug = ' + s.characterDebug + ';',
+    'testingBool = ' + s.showTrajectory + ';',
+    'galaxyBlur = ' + s.galaxyBlur + ';',
+    'galaxyBorder = ' + s.galaxyBorder + ';',
+    'fgGalaxyInClouds = ' + s.fgGalaxyInClouds + ';',
+    'fgGalaxyUseBorder = ' + s.fgGalaxyUseBorder + ';',
+    'fgGalaxyBlur = ' + s.fgGalaxyBlur + ';',
+    'fgGalaxyOpacity = ' + s.fgGalaxyOpacity + ';'
   ];
   return lines.join('\n');
 }
@@ -358,7 +404,7 @@ function initDebugControls() {
     camera.x = 0;
     camera.y = 0;
     character.centerY = -32;
-    character.centerX = canvas.width/2;
+    character.centerX = camera.width/2;
     physics.vx = 0;
     physics.vy = 0;
     gameSetup();
@@ -570,6 +616,70 @@ function initDebugControls() {
     debugStarsCanDie = this.checked;
   });
 
+  var grappleAssistToggle = document.getElementById('debug-grapple-assist');
+  grappleAssistToggle.checked = debugGrappleAssist;
+  grappleAssistToggle.addEventListener('change', function() {
+    debugGrappleAssist = this.checked;
+  });
+
+  var characterDebugToggle = document.getElementById('debug-character-debug');
+  characterDebugToggle.checked = debugCharacterDebug;
+  characterDebugToggle.addEventListener('change', function() {
+    debugCharacterDebug = this.checked;
+  });
+
+  // --- Visual controls ---
+  var galaxyBlurSlider = document.getElementById('debug-galaxy-blur');
+  var galaxyBlurVal = document.getElementById('debug-galaxy-blur-val');
+  galaxyBlurSlider.value = galaxyBlur;
+  galaxyBlurVal.textContent = galaxyBlur;
+  galaxyBlurSlider.addEventListener('input', function() {
+    galaxyBlur = parseFloat(this.value);
+    galaxyBlurVal.textContent = this.value;
+    localStorage.setItem('ss_galaxyBlur', galaxyBlur);
+    createGalaxyLayer();
+  });
+
+  var galaxyBorderToggle = document.getElementById('debug-galaxy-border');
+  galaxyBorderToggle.checked = galaxyBorder;
+  galaxyBorderToggle.addEventListener('change', function() {
+    galaxyBorder = this.checked;
+  });
+
+  var fgGalaxyInCloudsToggle = document.getElementById('debug-fg-galaxy-in-clouds');
+  fgGalaxyInCloudsToggle.checked = fgGalaxyInClouds;
+  fgGalaxyInCloudsToggle.addEventListener('change', function() {
+    fgGalaxyInClouds = this.checked;
+  });
+
+  var fgGalaxyUseBorderToggle = document.getElementById('debug-fg-galaxy-use-border');
+  fgGalaxyUseBorderToggle.checked = fgGalaxyUseBorder;
+  fgGalaxyUseBorderToggle.addEventListener('change', function() {
+    fgGalaxyUseBorder = this.checked;
+  });
+
+  var fgGalaxyBlurSlider = document.getElementById('debug-fg-galaxy-blur');
+  var fgGalaxyBlurVal = document.getElementById('debug-fg-galaxy-blur-val');
+  fgGalaxyBlurSlider.value = fgGalaxyBlur;
+  fgGalaxyBlurVal.textContent = fgGalaxyBlur;
+  fgGalaxyBlurSlider.addEventListener('input', function() {
+    fgGalaxyBlur = parseFloat(this.value);
+    fgGalaxyBlurVal.textContent = this.value;
+    localStorage.setItem('ss_fgGalaxyBlur', fgGalaxyBlur);
+    createForegroundGalaxy();
+  });
+
+  var fgGalaxyOpacitySlider = document.getElementById('debug-fg-galaxy-opacity');
+  var fgGalaxyOpacityVal = document.getElementById('debug-fg-galaxy-opacity-val');
+  fgGalaxyOpacitySlider.value = fgGalaxyOpacity;
+  fgGalaxyOpacityVal.textContent = fgGalaxyOpacity;
+  fgGalaxyOpacitySlider.addEventListener('input', function() {
+    fgGalaxyOpacity = parseFloat(this.value);
+    fgGalaxyOpacityVal.textContent = this.value;
+    localStorage.setItem('ss_fgGalaxyOpacity', fgGalaxyOpacity);
+    createForegroundGalaxy();
+  });
+
   // --- Sync all UI elements to current variable values ---
   function syncUI() {
     gravitySlider.value = physics.GRAVITY;
@@ -611,6 +721,16 @@ function initDebugControls() {
     trajectoryToggle.checked = testingBool;
     immunityToggle.checked = debugImmunityEnabled;
     starsCanDieToggle.checked = debugStarsCanDie;
+    grappleAssistToggle.checked = debugGrappleAssist;
+    galaxyBlurSlider.value = galaxyBlur;
+    galaxyBlurVal.textContent = galaxyBlur;
+    galaxyBorderToggle.checked = galaxyBorder;
+    fgGalaxyInCloudsToggle.checked = fgGalaxyInClouds;
+    fgGalaxyUseBorderToggle.checked = fgGalaxyUseBorder;
+    fgGalaxyBlurSlider.value = fgGalaxyBlur;
+    fgGalaxyBlurVal.textContent = fgGalaxyBlur;
+    fgGalaxyOpacitySlider.value = fgGalaxyOpacity;
+    fgGalaxyOpacityVal.textContent = fgGalaxyOpacity;
   }
 
   // Sync UI to loaded settings (from localStorage)

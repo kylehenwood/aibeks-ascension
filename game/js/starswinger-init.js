@@ -10,6 +10,7 @@
   // Base
   controls();
   mouseTestSetup();
+  setupMenuMouse();
   createMenu()
 
   // setup sub canvases
@@ -23,6 +24,7 @@
   //loadAudio();
   soundToggle();
   createDebugPanel();
+  createAutoplayPanel();
 
   // point at which game starts...
   var urlHash = window.location.hash;
@@ -30,7 +32,7 @@
   switch(urlHash) {
     case '#game-play': // play game
       character.centerY = -32;
-      character.centerX = canvas.width/2;
+      character.centerX = camera.width/2;
       gameMode = 'endless';
       gameSetup();
       startGame();

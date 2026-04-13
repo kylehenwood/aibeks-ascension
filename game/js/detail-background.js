@@ -3,28 +3,174 @@
 
 var starLayers = [];
 var twinkleStars = [];
+var galaxyCanvas;
+var galaxyBlur = parseFloat(localStorage.getItem('ss_galaxyBlur')) || 0;
+var galaxyBorder = false;
+var fgGalaxyInClouds = false;
+var fgGalaxyUseBorder = false;
+
+var fgGalaxyCanvas;
+var fgGalaxyBlur = parseFloat(localStorage.getItem('ss_fgGalaxyBlur')) || 0;
+var fgGalaxyOpacity = parseFloat(localStorage.getItem('ss_fgGalaxyOpacity'));
+if (isNaN(fgGalaxyOpacity)) fgGalaxyOpacity = 1;
 
 function setupBackground() {
+  createGalaxyLayer();
+  createForegroundGalaxy();
   setupBackgroundStars();
 }
 
 function drawBackground() {
+  // Gradient sky — deep navy to indigo/purple
+  var ctx = canvas.context;
+  var grad = ctx.createLinearGradient(0, 0, camera.width, 0);
+  grad.addColorStop(0, '#0a0a2e');
+  grad.addColorStop(1, '#1e0a3a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, camera.width, camera.height);
+
+  drawGalaxyLayer();
   drawBackgroundStars();
+}
+
+// Stored blob positions so we can regenerate with different blur
+var galaxyBlobs = [];
+
+function createGalaxyBlobs() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+  var maxRadius = 240;
+  galaxyBlobs = [];
+  var blobCount = 5 + rand(0, 4);
+  for (var i = 0; i < blobCount; i++) {
+    var radius = rand(100, maxRadius);
+    // Inset by radius + max blur margin so nothing bleeds past edges (tileable)
+    var margin = radius + Math.max(galaxyBlur, fgGalaxyBlur);
+    galaxyBlobs.push({
+      x: rand(margin, gw - margin),
+      y: rand(margin, gh - margin),
+      radius: radius
+    });
+  }
+}
+
+function createGalaxyLayer() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+
+  galaxyCanvas = document.createElement('canvas');
+  galaxyCanvas.width = gw;
+  galaxyCanvas.height = gh;
+  var ctx = galaxyCanvas.getContext('2d');
+
+  // Generate blob positions on first call
+  if (galaxyBlobs.length === 0) {
+    createGalaxyBlobs();
+  }
+
+  // Apply blur filter if set
+  if (galaxyBlur > 0) {
+    ctx.filter = 'blur(' + galaxyBlur + 'px)';
+  }
+
+  // Draw solid white circles
+  ctx.fillStyle = 'rgba(120, 80, 200, 0.14)';
+  for (var i = 0; i < galaxyBlobs.length; i++) {
+    var b = galaxyBlobs[i];
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.filter = 'none';
+}
+
+// Shared tiling helper — draws a galaxy canvas with overlap and optional debug border
+function tileGalaxy(targetCtx, galaxyImg, blur, vw, vh) {
+  var gw = galaxyImg.width;
+  var gh = galaxyImg.height;
+  var stepX = gw - blur;
+  var stepY = gh - blur;
+  var depth = parallax.galaxy;
+  var offsetX = camera.scrollX * depth - (gw - vw) / 2;
+  var offsetY = camera.scrollY * depth - (gh - vh) / 2;
+  var tileX = ((offsetX % stepX) + stepX) % stepX;
+  var tileY = ((offsetY % stepY) + stepY) % stepY;
+
+  for (var tx = -1; tx <= 1; tx++) {
+    for (var ty = -1; ty <= 1; ty++) {
+      var drawX = tileX + tx * stepX;
+      var drawY = tileY + ty * stepY;
+      if (drawX + gw > 0 && drawX < vw && drawY + gh > 0 && drawY < vh) {
+        targetCtx.drawImage(galaxyImg, drawX, drawY);
+        if (galaxyBorder) {
+          targetCtx.strokeStyle = 'rgba(0, 100, 255, 0.8)';
+          targetCtx.lineWidth = 2;
+          targetCtx.strokeRect(drawX, drawY, gw, gh);
+        }
+      }
+    }
+  }
+}
+
+// Draw background galaxy (white blobs behind stars)
+function drawGalaxyLayer() {
+  tileGalaxy(canvas.context, galaxyCanvas, galaxyBlur, camera.width, camera.height);
+}
+
+// Draw background galaxy onto an arbitrary context (for cloud masking — currently unused)
+function drawGalaxyToContext(ctx, w, h) {
+  tileGalaxy(ctx, galaxyCanvas, galaxyBlur, w, h);
+}
+
+// Draw foreground galaxy (green blobs) onto an arbitrary context
+function drawFgGalaxyToContext(ctx, w, h) {
+  tileGalaxy(ctx, fgGalaxyCanvas, fgGalaxyBlur, w, h);
+}
+
+// Create the foreground galaxy — same blob layout, bright green
+function createForegroundGalaxy() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+
+  fgGalaxyCanvas = document.createElement('canvas');
+  fgGalaxyCanvas.width = gw;
+  fgGalaxyCanvas.height = gh;
+  var ctx = fgGalaxyCanvas.getContext('2d');
+
+  // Generate blob positions if not yet created
+  if (galaxyBlobs.length === 0) {
+    createGalaxyBlobs();
+  }
+
+  if (fgGalaxyBlur > 0) {
+    ctx.filter = 'blur(' + fgGalaxyBlur + 'px)';
+  }
+
+  ctx.fillStyle = 'rgba(0, 255, 50, ' + fgGalaxyOpacity + ')';
+  for (var i = 0; i < galaxyBlobs.length; i++) {
+    var b = galaxyBlobs[i];
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.filter = 'none';
 }
 
 function createStarPanel(density, size) {
   var panel = document.createElement('canvas');
-  panel.width = canvas.width;
-  panel.height = canvas.height;
+  panel.width = camera.width;
+  panel.height = camera.height;
   panel.context = panel.getContext('2d');
 
-  var area = (canvas.width * canvas.height) / (40 * 40);
+  var area = (camera.width * camera.height) / (40 * 40);
   var starCount = area * density;
   var starColor = 'rgba(255, 255, 255, 0.3)';
 
   for (var i = 0; i < starCount; i++) {
-    var starX = rand((size / 2), canvas.width - (size / 2));
-    var starY = rand((size / 2), canvas.height - (size / 2));
+    var starX = rand((size / 2), camera.width - (size / 2));
+    var starY = rand((size / 2), camera.height - (size / 2));
 
     panel.context.beginPath();
     panel.context.arc(starX, starY, size, 0, Math.PI * 2, true);
@@ -37,11 +183,11 @@ function createStarPanel(density, size) {
 
 function setupTwinkleStars() {
   twinkleStars = [];
-  var count = Math.floor((canvas.width * canvas.height) / (40 * 40) * 0.08);
+  var count = Math.floor((camera.width * camera.height) / (40 * 40) * 0.08);
   for (var i = 0; i < count; i++) {
     twinkleStars.push({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x: Math.random() * camera.width,
+      y: Math.random() * camera.height,
       size: 1 + Math.random() * 2,
       phase: Math.random() * Math.PI * 2,
       speed: 0.5 + Math.random() * 1.5
@@ -62,8 +208,8 @@ function setupBackgroundStars() {
 
 // Draw tiling background stars based on camera position
 function drawBackgroundStars() {
-  var w = canvas.width;
-  var h = canvas.height;
+  var w = camera.width;
+  var h = camera.height;
 
   for (var l = 0; l < starLayers.length; l++) {
     var layer = starLayers[l];

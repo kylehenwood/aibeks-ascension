@@ -19,8 +19,8 @@ function mouseTestSetup() {
   elem.addEventListener('click', function(event) {
     // Map screen pixels to canvas coordinates (accounts for CSS scaling)
     var rect = elem.getBoundingClientRect();
-    var scaleX = canvas.width / rect.width;
-    var scaleY = canvas.height / rect.height;
+    var scaleX = camera.width / rect.width;
+    var scaleY = camera.height / rect.height;
     var mouseX = (event.pageX - rect.left) * scaleX;
     var mouseY = (event.pageY - rect.top) * scaleY;
 
@@ -85,7 +85,7 @@ function playClick(mouseX,mouseY) {
       changeHook(closestIndex);
     }
     // paused button
-    if (mouseY > canvas.height-80 && mouseX < 80) {
+    if (mouseY > camera.height-80 && mouseX < 80) {
       clickedSomething = true;
       gamePause();
     }
@@ -109,7 +109,7 @@ function pauseClick(mouseX,mouseY) {
 
 // allow click of pause button during resume state
 function resumeClick(mouseX,mouseY) {
-  if (mouseY > canvas.height-80 && mouseX < 80) {
+  if (mouseY > camera.height-80 && mouseX < 80) {
     gamePause();
   }
 }
@@ -189,8 +189,40 @@ function controls() {
           break;
 
           case 32: // spacebar
-          if (gameState === "playGame") {
-            detach();
+          if (gameState === "gameMenu") {
+            playButton.hover = true;
+            playButton.pressed = true;
+            setTimeout(function() {
+              playButton.pressed = false;
+              animateStart();
+            }, 120);
+          } else if (gameState === "gameOver") {
+            backToMenu();
+          } else if (gameState === "playGame") {
+            if (character.swinging) {
+              detach();
+            } else {
+              // Connect to closest alive star in the direction of travel
+              var movingRight = physics.vx >= 0;
+              var bestDist = Infinity;
+              var bestIndex = -1;
+              for (var i = 0; i < starHooks.length; i++) {
+                var hook = starHooks[i];
+                if (!hook.star.alive) continue;
+                if (movingRight && hook.centerX < character.centerX) continue;
+                if (!movingRight && hook.centerX > character.centerX) continue;
+                var dx = hook.centerX - character.centerX;
+                var dy = hook.centerY - character.centerY;
+                var dist = dx * dx + dy * dy;
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  bestIndex = i;
+                }
+              }
+              if (bestIndex >= 0) {
+                changeHook(bestIndex);
+              }
+            }
           }
           break;
 

@@ -4,7 +4,7 @@ var gameLoading = {
   canvas: null,
   context: null,
   progress: 0,
-  loadTime: 1000,
+  loadTime: 0,
   splashImg: null,
   splashReady: false
 }
@@ -13,12 +13,12 @@ function setupLoading() {
   gameState = 'loading';
 
   setTimeout(function(){
-    setupIntro();
+    setupMenu();
   },gameLoading.loadTime);
 
   gameLoading.canvas = document.createElement('canvas');
-  gameLoading.canvas.width = canvas.width;
-  gameLoading.canvas.height = canvas.height;
+  gameLoading.canvas.width = camera.width;
+  gameLoading.canvas.height = camera.height;
   gameLoading.context = gameLoading.canvas.getContext('2d');
 
   // load splash art
@@ -32,11 +32,11 @@ function setupLoading() {
 
 // faux loading bar currently
 function updateLoading(context) {
-  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.clearRect(0, 0, camera.width, camera.height);
 
   // dark background
   context.beginPath();
-  context.rect(0,0,canvas.width,canvas.height);
+  context.rect(0,0,camera.width,camera.height);
   context.fillStyle = '#0a0a12';
   context.fill();
   context.closePath();
@@ -45,26 +45,26 @@ function updateLoading(context) {
   if (gameLoading.splashReady) {
     var img = gameLoading.splashImg;
     var imgRatio = img.naturalWidth / img.naturalHeight;
-    var canvasRatio = canvas.width / canvas.height;
+    var canvasRatio = camera.width / camera.height;
     var drawW, drawH, drawX, drawY;
 
     if (canvasRatio > imgRatio) {
-      drawW = canvas.width;
-      drawH = canvas.width / imgRatio;
+      drawW = camera.width;
+      drawH = camera.width / imgRatio;
     } else {
-      drawH = canvas.height;
-      drawW = canvas.height * imgRatio;
+      drawH = camera.height;
+      drawW = camera.height * imgRatio;
     }
-    drawX = (canvas.width - drawW) / 2;
-    drawY = (canvas.height - drawH) / 2;
+    drawX = (camera.width - drawW) / 2;
+    drawY = (camera.height - drawH) / 2;
 
     context.drawImage(img, drawX, drawY, drawW, drawH);
   }
 
   // faux loading bar
   var barWidth = 200;
-  var barStart = (canvas.width / 2) - (barWidth / 2);
-  var barY = canvas.height - 40;
+  var barStart = (camera.width / 2) - (barWidth / 2);
+  var barY = camera.height - 40;
 
   if(gameLoading.progress < 100) {
     gameLoading.progress += 2;

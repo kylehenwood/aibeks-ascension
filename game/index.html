@@ -36,11 +36,14 @@
 
     /* Debug panel sidebar */
     #debug-panel {
+      position: fixed;
+      top: 12px;
+      left: 12px;
       width: 280px;
-      flex-shrink: 0;
-      height: 100vh;
-      background: #000;
-      border-right: 1px solid rgba(255,255,255,0.12);
+      max-height: calc(100vh - 24px);
+      background: rgba(0,0,0,0.85);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
       color: #ccc;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
       font-size: 12px;
@@ -48,6 +51,8 @@
       flex-direction: column;
       user-select: none;
       overflow: hidden;
+      z-index: 10001;
+      backdrop-filter: blur(6px);
     }
 
     /* Header */
@@ -57,8 +62,9 @@
       font-size: 14px;
       letter-spacing: 0.5px;
       color: #fff;
-      background: #000;
+      background: rgba(0,0,0,0.85);
       border-bottom: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px 6px 0 0;
       flex-shrink: 0;
     }
 
@@ -360,6 +366,37 @@
       display: none !important;
     }
 
+    /* Autoplay panel — fixed top-right overlay */
+    #autoplay-panel {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      width: 220px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      color: #ccc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      font-size: 12px;
+      user-select: none;
+      z-index: 10001;
+      backdrop-filter: blur(6px);
+    }
+    #autoplay-panel .debug-panel__header {
+      padding: 10px 14px;
+      font-size: 12px;
+      border-radius: 6px 6px 0 0;
+    }
+    #autoplay-panel .debug-panel__body {
+      padding: 8px 14px 12px;
+    }
+    #autoplay-panel .debug-panel__toggle {
+      margin-bottom: 4px;
+    }
+    #autoplay-panel .debug-panel__slider {
+      margin-bottom: 6px;
+    }
+
     /* Mobile auto-enters scaled mode */
     @media (max-width: 900px) {
       #debug-panel,
@@ -463,6 +500,7 @@
 <script type="text/javascript" src="js/hookGrappel.js"></script>
 
 <script type="text/javascript" src="js/game-movement.js"></script>
+<script type="text/javascript" src="js/autoplay.js"></script>
 
 <script type="text/javascript" src="js/game-pause.js"></script>
 <script type="text/javascript" src="js/game-pause-elements.js"></script>
@@ -513,42 +551,12 @@
   }
 
   function applyScaledCanvas() {
-    // Height is always 640 — gameplay is constrained to this
-    // Width expands to match screen aspect ratio so wider screens see more
-    var screenW = window.innerWidth;
-    var screenH = window.innerHeight;
-    var newWidth = Math.round(GAME_HEIGHT * (screenW / screenH));
-
-    canvas.height = GAME_HEIGHT;
-    canvas.width = newWidth;
-    canvasEl.setAttribute('width', canvas.width);
-    canvasEl.setAttribute('height', canvas.height);
-
-    // Resize game-over overlay canvas
-    if (gameOver && gameOver.canvas) {
-      gameOver.canvas.width = canvas.width;
-      gameOver.canvas.height = canvas.height;
-    }
-
-    // Rebuild backgrounds/foregrounds for new dimensions
-    if (typeof setupBackground === 'function') setupBackground();
-    if (typeof setupForeground === 'function') setupForeground();
+    // Canvas stays at fixed camera dimensions (1200x640).
+    // CSS object-fit: contain handles display scaling to any screen size.
     if (typeof setMouseVariables === 'function') setMouseVariables();
   }
 
   function restoreDefaultCanvas() {
-    canvas.width = DEFAULT_WIDTH;
-    canvas.height = GAME_HEIGHT;
-    canvasEl.setAttribute('width', canvas.width);
-    canvasEl.setAttribute('height', canvas.height);
-
-    if (gameOver && gameOver.canvas) {
-      gameOver.canvas.width = canvas.width;
-      gameOver.canvas.height = canvas.height;
-    }
-
-    if (typeof setupBackground === 'function') setupBackground();
-    if (typeof setupForeground === 'function') setupForeground();
     if (typeof setMouseVariables === 'function') setMouseVariables();
   }
 

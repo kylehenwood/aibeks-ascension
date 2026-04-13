@@ -20,20 +20,34 @@ function updateInterface() {
     canvas.context.save();
     canvas.context.globalAlpha = guiAlpha;
     scoreCounter(canvas.context);
-    valueIndicator(canvas.context);
     canvas.context.restore();
+  }
+
+  // Debug: character overlay (toggled via debug panel)
+  if (debugCharacterDebug) {
+    drawCharacterDebug(canvas.context);
   }
 }
 
-function valueIndicator(context) {
+function drawCharacterDebug(context) {
+  context.save();
+  context.fillStyle = 'rgba(0,0,0,0.5)';
+  context.fillRect(camera.width - 260, camera.height - 170, 248, 160);
   context.fillStyle = 'white';
-  context.font = '24px sans-serif';
-  //context.fillText('Val: '+momentiumAngle, 16, canvas.height-24);
-
-  context.textBaseline="bottom";
-  context.textAlign="right";
-  context.fillText(Math.round(physics.vx,2)+' :VX', canvas.width-24, canvas.height-56);
-  context.fillText(Math.round(physics.vy,2)+' :VY', canvas.width-24, canvas.height-24);
+  context.font = '16px monospace';
+  context.textBaseline = 'top';
+  context.textAlign = 'left';
+  var x = camera.width - 248;
+  var y = camera.height - 162;
+  context.fillText('charX: ' + Math.round(character.centerX), x, y);
+  context.fillText('charY: ' + Math.round(character.centerY), x, y + 20);
+  context.fillText('camX:  ' + Math.round(camera.x), x, y + 40);
+  context.fillText('camY:  ' + Math.round(camera.y), x, y + 60);
+  context.fillText('VX:    ' + Math.round(physics.vx), x, y + 80);
+  context.fillText('VY:    ' + Math.round(physics.vy), x, y + 100);
+  context.fillText('state: ' + gameState, x, y + 120);
+  context.fillText('phase: ' + restartPhase, x, y + 140);
+  context.restore();
 }
 
 // fps display
@@ -61,5 +75,5 @@ function scoreCounter(context) {
   context.textBaseline="top";
   context.textAlign="right";
   context.font = '24px sans-serif';
-  context.fillText('DISTANCE: '+gameUserInterface.score+'m', canvas.width-24, 24);
+  context.fillText('DISTANCE: '+gameUserInterface.score+'m', camera.width-24, 24);
 }

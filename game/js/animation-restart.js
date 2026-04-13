@@ -22,7 +22,7 @@ function restartGame() {
 // seamlessly — new content enters from below and settles at camera.y = 0.
 
 function restartAnimation() {
-  var clearance = canvas.height * 1.5;
+  var clearance = camera.height * 1.5;
   var totalDistance = clearance * 2; // full sweep: clearance down + clearance back up
 
   restartProgress += (1 / restartDuration) * dt;
@@ -48,6 +48,7 @@ function restartAnimation() {
     }
 
     camera.vy = camera.y - prevCamY;
+    camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
 
     // Swap at midpoint — content is off screen, camera moving fastest
@@ -66,7 +67,7 @@ function restartAnimation() {
       camera.scrollY = savedScrollY;
 
       // Position first star centered on screen relative to current camera.x
-      var screenCenterX = -camera.x + canvas.width / 2;
+      var screenCenterX = -camera.x + camera.width / 2;
       var shift = screenCenterX - starHooks[0].centerX;
       for (var i = 0; i < starHooks.length; i++) {
         starHooks[i].posX += shift;
@@ -96,7 +97,7 @@ function restartAnimation() {
       restartPhase = 'falling';
 
       character.centerX = starHooks[0].centerX - 240;
-      character.centerY = starHooks[0].centerY - canvas.height;
+      character.centerY = -(character.size);
       physics.vx = 0;
       physics.vy = 0;
     }

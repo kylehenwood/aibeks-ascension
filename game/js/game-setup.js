@@ -9,7 +9,7 @@ var gamePanel = {
 function setupGameCanvas() {
   gamePanel.canvas = document.createElement('canvas');
   gamePanel.canvas.width = infiniteGen.canvasWidth;
-  gamePanel.canvas.height = canvas.height;
+  gamePanel.canvas.height = camera.height;
   gamePanel.context = gamePanel.canvas.getContext('2d');
 }
 
@@ -37,6 +37,17 @@ function createPanel() {
   generateStars();
 }
 
+// Check if a candidate grid position overlaps any existing star (64px tile size)
+function starOverlaps(gridPos) {
+  var size = gridSize.square; // 64
+  for (var i = 0; i < starHooks.length; i++) {
+    var dx = Math.abs(gridPos.positionX - starHooks[i].posX);
+    var dy = Math.abs(gridPos.positionY - starHooks[i].posY);
+    if (dx < size && dy < size) return true;
+  }
+  return false;
+}
+
 // Generate stars up to current gridSize.cols, continuing from last position
 function generateStars() {
   var totalCols = gridSize.cols;
@@ -62,23 +73,24 @@ function generateStars() {
       if (isFirst) {
         row = 1;
       } else {
-        // Pick a row that doesn't match the previous star's row
+        // Pick a row that doesn't overlap any existing star
         row = rand(0, gridSize.rows - 1);
-        if (starHooks.length > 0) {
-          var prevRow = infiniteGen.lastRow;
-          var attempts = 0;
-          while (row === prevRow && attempts < 10) {
-            row = rand(0, gridSize.rows - 1);
-            attempts++;
-          }
+        var attempts = 0;
+        while (attempts < 20) {
+          var candidatePos = col * gridSize.rows + row;
+          if (candidatePos < gridPositions.length && !starOverlaps(gridPositions[candidatePos])) break;
+          row = rand(0, gridSize.rows - 1);
+          attempts++;
         }
       }
 
       var position = col * gridSize.rows + row;
-      createHook(position, isFirst);
-      infiniteGen.totalStars++;
-      infiniteGen.lastRow = row;
-      isFirst = false;
+      if (position < gridPositions.length && !starOverlaps(gridPositions[position])) {
+        createHook(position, isFirst);
+        infiniteGen.totalStars++;
+        infiniteGen.lastRow = row;
+        isFirst = false;
+      }
     }
   }
 
@@ -109,7 +121,7 @@ function generateMoreStars() {
 // Add grid positions for columns fromCol to toCols
 // Subtracts totalOffset so new positions are in current canvas coordinates
 function extendGridPositions(fromCol, toCols) {
-  var startingX = (canvas.width / 2) - 32 - infiniteGen.totalOffset;
+  var startingX = (camera.width / 2) - 32 - infiniteGen.totalOffset;
   for (var c = fromCol; c < toCols; c++) {
     var positionX = startingX + c * 64;
     for (var r = 0; r < gridSize.rows; r++) {
@@ -169,7 +181,7 @@ function shiftWorld() {
 
 // Remove stars that are far behind the camera to free memory
 function cleanupOldStars() {
-  var cullX = -camera.x - canvas.width * 2;
+  var cullX = -camera.x - camera.width * 2;
   var removed = 0;
 
   while (starHooks.length > 1 && starHooks[0].posX + starHooks[0].size < cullX) {
@@ -203,7 +215,7 @@ function createGrid() {
 
   var horizontal;
   var vertical;
-  var positionX = (canvas.width/2) - 32;  // first star column centered on screen
+  var positionX = (camera.width/2) - 32;  // first star column centered on screen
   var positionY = 0;
   var order;
 
@@ -255,7 +267,7 @@ function drawSquare(gridContext,color,size,positionX,positionY) {
 function drawVisibleGrid(context, viewLeft, viewRight) {
   var sq = gridSize.square;
   var rows = gridSize.rows;
-  var gridStartX = (canvas.width / 2) - 32 + 320 - infiniteGen.totalOffset;
+  var gridStartX = (camera.width / 2) - 32 + 320 - infiniteGen.totalOffset;
 
   // Snap to grid boundaries
   var firstCol = Math.floor((viewLeft - gridStartX) / sq);

@@ -10,14 +10,16 @@ var menuElems = [];
 
 function setupMenu() {
   gameState = 'gameMenu';
-  character.centerX = canvas.width/2;
+  menuFirstLoad = false;
+  character.centerX = camera.width/2;
+  playButton.alpha = 1;
 }
 
 // create the pause overlay
 function createMenu() {
   gameMenu.canvas = document.createElement('canvas');
-  gameMenu.canvas.width = canvas.width;
-  gameMenu.canvas.height = canvas.height;
+  gameMenu.canvas.width = camera.width;
+  gameMenu.canvas.height = camera.height;
   gameMenu.context = gameMenu.canvas.getContext('2d');
 
   // intro elements
@@ -42,18 +44,17 @@ function updateMenu() {
   //context = canvas.context;
   var context = gameMenu.context;
 
-  context.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Position character on the platform surface
-  var hoverY = platform.posY + platform.hover;
-  character.centerX = platform.posX + platform.width / 2;
-  character.centerY = hoverY + 26 - character.size / 2;
+  context.clearRect(0, 0, camera.width, camera.height);
 
   // title (behind platform)
-  context.drawImage(logo.canvas, logo.posX + camera.x * parallax.logo, logo.posY);
+  context.drawImage(logo.canvas, logo.posX, logo.posY);
 
-  // platform scene (drawn by RAF, not here — we just draw logo, character, buttons)
+  // platform scene — also ticks hover animation
   drawPlatformScene(context);
+
+  // Position character on platform AFTER hover has been updated
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
 
   // Draw character on platform
   drawCharacter(context);
@@ -63,7 +64,8 @@ function updateMenu() {
   // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
   // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
 
-  // play button
+  // play button — re-render for hover/press state
+  renderPlayButton();
   context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
 }
 

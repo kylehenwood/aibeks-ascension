@@ -17,6 +17,9 @@ function positionFirstStar() {
 }
 
 function animateStart() {
+  playButton.hover = false;
+  playButton.pressed = false;
+  canvas.id.style.cursor = '';
   gameSetup();
   gameState = 'starting';
   hookAlpha = 0;
@@ -28,13 +31,13 @@ function animateStart() {
   character.centerX = platform.posX + platform.width / 2;
   character.centerY = hoverY + 26 - character.size / 2;
 
-  logo.posX = (canvas.width / 2) - (logo.width / 2);
+  logo.posX = (camera.width / 2) - (logo.width / 2);
   start.logoStartX = logo.posX;
   start.platformStartX = platform.posX;
 
   // Camera: starts on platform (0), pans to center first star
   start.cameraStartX = 0;
-  start.targetCameraX = -(starHooks[0].centerX - canvas.width / 2);
+  start.targetCameraX = -(starHooks[0].centerX - camera.width / 2);
 
   start.state = 1;
   start.progress = 0;
@@ -54,6 +57,8 @@ function drawExitingPlatform(context) {
   else { platform.hover += 0.024 * dt; }
   platform.time += 0.016 * dt;
 
+  var exitParallax = start.platformParallax;
+
   // Register collision surface when platform starts exiting
   if (!start.platformSurface) {
     start.platformSurface = addSurface({
@@ -61,7 +66,7 @@ function drawExitingPlatform(context) {
       y: platform.posY + platform.hover + 26,
       width: platform.width,
       height: 10,
-      parallax: start.platformParallax,
+      parallax: exitParallax,
       topOnly: true,
       tag: 'platform'
     });
@@ -71,10 +76,10 @@ function drawExitingPlatform(context) {
   start.platformSurface.x = start.platformStartX;
   start.platformSurface.y = platform.posY + platform.hover + 26;
 
-  var platScreenX = start.platformStartX + camera.x * start.platformParallax;
-  var platScreenY = platform.posY + platform.hover + camera.y * start.platformParallax;
+  var platScreenX = start.platformStartX + camera.x * exitParallax;
+  var platScreenY = platform.posY + platform.hover + camera.y * exitParallax;
   // Off screen — stop drawing and remove collision surface
-  if (platScreenX + platform.width < -100 || platScreenY > canvas.height + 200 || platScreenY + platform.height < -200) {
+  if (platScreenX + platform.width < -100 || platScreenY > camera.height + 200 || platScreenY + platform.height < -200) {
     start.platformExiting = false;
     removeSurface(start.platformSurface);
     start.platformSurface = null;
@@ -120,9 +125,9 @@ function updateStart() {
     start.progress += 0.004 * dt;
     if (start.progress > 1) start.progress = 1;
 
-    // sine ease — slow start, smooth acceleration, gentle stop
+    // easeInOutCubic — gentle start, smooth middle, soft stop
     var t = start.progress;
-    var ease = (1 - Math.cos(t * Math.PI)) / 2;
+    var ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 
     // pan camera from platform toward first star
     var prevCamX = camera.x;
@@ -138,8 +143,9 @@ function updateStart() {
     character.centerX = platScreenX + platform.width / 2;
     character.centerY = hoverY + 26 - character.size / 2;
 
-    // Fade out logo — drifts slightly less than camera (background feel)
+    // Fade out logo + button glow — drifts slightly less than camera (background feel)
     start.logoAlpha = 1 - ease;
+    playButton.alpha = 1 - ease;
     if (start.logoAlpha > 0) {
       context.save();
       context.globalAlpha = start.logoAlpha;
@@ -147,6 +153,9 @@ function updateStart() {
       context.drawImage(logo.canvas, logoX, logo.posY);
       context.restore();
     }
+
+    // Play button outro — line shrinks to center, text fades out
+    drawPlayButtonOutro(context, ease);
 
     // Draw platform (stationary)
     context.drawImage(platform.canvas, platScreenX, hoverY);
@@ -170,7 +179,7 @@ function updateStart() {
 
   //----
   // State 2: Character walks to right edge of platform
-  if (start.state === 2) {
+  else if (start.state === 2) {
     start.progress += 0.02 * dt;
     if (start.progress > 1) start.progress = 1;
 
@@ -207,7 +216,7 @@ function updateStart() {
 
   //----
   // State 3: Character hops off platform, grapples to first star, transitions to gameplay
-  if (start.state === 3) {
+  else if (start.state === 3) {
     if (start.hopping) {
       // Small hop arc (screen coordinates)
       start.hopVY += 0.25 * dt;

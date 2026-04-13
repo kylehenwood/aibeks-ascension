@@ -12,7 +12,9 @@ var camera = {
   target: null,    // 'hook' | 'character' | 'position' | null (manual/animation)
   targetX: 0,      // where camera wants to be
   targetY: 0,
-  ease: 16         // frames to reach target
+  ease: 16,        // frames to reach target
+  width: 1200,     // fixed gameplay viewport width
+  height: 640      // fixed gameplay viewport height
 };
 
 function cameraFollowHook() { camera.target = 'hook'; }
@@ -59,23 +61,39 @@ function runGame(timestamp) {
     animateToMenu();
     // Draw
     drawBackground();
-    // First half of sweep: old game content + character scroll out together
+    // Stage 10 first half: draw old game content as-is (no updateGame — prevents clearing)
     if (menuStage === 10 && !menuPanReset) {
-      canvas.context.drawImage(gamePanel.canvas,camera.x,camera.y);
-      // Character scrolls out with the game panel (apply same camera offset)
+      var gpx = camera.x * parallax.gamePanel;
+      var gpy = camera.y * parallax.gamePanel;
+      canvas.context.drawImage(gamePanel.canvas, gpx, gpy);
+      canvas.context.drawImage(clickAreas.canvas, gpx, gpy);
       canvas.context.save();
-      canvas.context.translate(camera.x, camera.y);
+      canvas.context.translate(gpx, gpy);
       drawCharacter(canvas.context);
       canvas.context.restore();
     }
     drawForeground(canvas.context,true);
-    // Platform rises from below — only draw after midpoint swap (or non-sweep stages)
-    if (menuStage !== 10 || menuPanReset) {
-      drawPlatformScene(canvas.context, camera.y);
+    // Stage 10 first half: draw exiting platform in front of clouds (matches playGame order)
+    if (menuStage === 10 && !menuPanReset) {
+      drawExitingPlatform(canvas.context);
     }
-    // Character for menu stages (falling onto platform, landed)
-    if (menuStage !== 10) {
+    // Draw menu scene (stage 5, stage 10 after cleanup, and later stages)
+    if (!(menuStage === 10 && !menuPanReset)) {
+      drawPlatformScene(canvas.context, camera.y);
+      if (logo.alpha > 0) {
+        canvas.context.save();
+        canvas.context.globalAlpha = logo.alpha;
+        canvas.context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * parallax.logo);
+        canvas.context.restore();
+      }
       drawCharacter(canvas.context);
+    }
+    // Play button in front of clouds (stage 3 intro)
+    if (menuStage === 3 && playButton.alpha > 0) {
+      canvas.context.save();
+      canvas.context.globalAlpha = playButton.alpha;
+      canvas.context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
+      canvas.context.restore();
     }
     drawGameOverlay(canvas.context,'fade-out');
     break;
@@ -105,11 +123,13 @@ function runGame(timestamp) {
     drawForeground(canvas.context,true);
     // Platform slides off left after game starts
     drawExitingPlatform(canvas.context);
+    // Off-screen star indicator
+    drawNextStarIndicator(canvas.context);
     // pause icon
     drawPauseIcon();
 
     // game over condition
-    if (character.centerY-(character.size/2) > canvas.height) {
+    if (character.centerY-(character.size/2) > camera.height) {
       setupGameOverAnimation();
     }
     break;
@@ -117,15 +137,18 @@ function runGame(timestamp) {
 
     case 'gameRestart':
     //Update
-    updateGame();
     restartAnimation();
+    // Only update game after midpoint swap (new level in place) or during falling
+    if (restartGameReset || restartPhase === 'falling') {
+      updateGame();
+    }
     //draw
     drawBackground();
+    drawCharacter(gamePanel.context);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
     canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
     canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawCharacter(gamePanel.context);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     if (restartPhase !== 'falling') {
@@ -226,10 +249,10 @@ function runGame(timestamp) {
 function updateCamera() {
   var gp = parallax.gamePanel;
   if (camera.target === 'hook' && selectedHook) {
-    camera.targetX = (selectedHook.posX - (canvas.width/2) + (selectedHook.size/2)) * -1 / gp;
+    camera.targetX = (selectedHook.posX - (camera.width/2) + (selectedHook.size/2)) * -1 / gp;
     camera.targetY = 0;
   } else if (camera.target === 'character') {
-    camera.targetX = (character.centerX - (canvas.width/2) + (character.size/2)) * -1 / gp;
+    camera.targetX = (character.centerX - (camera.width/2) + (character.size/2)) * -1 / gp;
     camera.targetY = 0;
   }
   // 'position' — targetX/targetY already set by cameraPanTo
