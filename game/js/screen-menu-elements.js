@@ -70,6 +70,11 @@ function setupMenuMouse() {
     menuMouse.active = false;
   });
 }
+function repositionPlayButton() {
+  playButton.posX = (camera.width / 2) - (playButton.width / 2);
+  playButton.posY = (camera.height / 2) + 240;
+}
+
 function createPlayButton(data){
   playButton.posX = (camera.width/2)-(240/2),
   playButton.posY = (camera.height/2)+240,

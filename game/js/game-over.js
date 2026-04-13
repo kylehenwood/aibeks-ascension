@@ -17,8 +17,15 @@ function setupGameOver() {
 
 }
 
-function updateGameOver() {
+function repositionGameOverButtons() {
+  restartButton.posX = 24;
+  restartButton.posY = camera.height - restartButton.height - 24;
+  introButton.posX = camera.width - introButton.width - 24;
+  introButton.posY = camera.height - introButton.height - 24;
+}
 
+function updateGameOver() {
+  repositionGameOverButtons();
   gameOver.context.clearRect(0,0,camera.width,camera.height)
 
   // Fade in

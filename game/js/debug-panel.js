@@ -38,6 +38,28 @@ function createDebugPanel() {
     '<div class="debug-panel__header">Control Panel</div>' +
     '<div class="debug-panel__body">' +
 
+      // Camera — at top for quick access
+      sectionHTML('Camera',
+        '<div class="debug-panel__slider">' +
+          '<div class="debug-panel__slider-label">' +
+            '<span>Viewport<span class="debug-panel__info" data-tip="Resize the camera region to simulate different devices">i</span></span>' +
+            '<span id="debug-camera-size-val">' + camera.width + '×' + camera.height + '</span>' +
+          '</div>' +
+          '<select id="debug-camera-preset" class="debug-panel__select" style="width:100%">' +
+            '<option value="1200x640">Desktop (1200×640)</option>' +
+            '<option value="2532x1170">iPhone 14 (2532×1170)</option>' +
+            '<option value="2796x1290">iPhone 15 Pro Max (2796×1290)</option>' +
+            '<option value="2340x1080">Samsung Galaxy S24 (2340×1080)</option>' +
+            '<option value="2400x1080">Pixel 7 (2400×1080)</option>' +
+            '<option value="2266x1488">iPad Mini (2266×1488)</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="debug-panel__actions" style="margin-top:6px">' +
+          '<button id="debug-render-fullscreen" class="debug-panel__btn">Fullscreen</button>' +
+          '<button id="debug-render-viewport" class="debug-panel__btn">Viewport Only</button>' +
+        '</div>'
+      ) +
+
       // Game controls
       sectionHTML('Game',
         '<div class="debug-panel__actions">' +
@@ -104,25 +126,6 @@ function createDebugPanel() {
         sliderHTML('Ratchet', 'debug-ratchet', '0', '1', '0.05', 'How aggressively the rope shortens when character swings close to the star. 0 = off, 1 = instant') +
         sliderHTML('Ratchet Max %', 'debug-ratchet-max', '0', '1', '0.05', 'Max shortening as fraction of initial rope length. 0.5 = rope can halve at most') +
         sliderHTML('Rope Min Length', 'debug-min-rope', '0', '200', '5', 'Shortest the rope can get via ratchet/retract. 0 = no limit')
-      ) +
-
-      // Camera
-      sectionHTML('Camera',
-        '<div class="debug-panel__slider">' +
-          '<div class="debug-panel__slider-label">' +
-            '<span>Viewport<span class="debug-panel__info" data-tip="Resize the camera region to simulate different devices">i</span></span>' +
-            '<span id="debug-camera-size-val">' + camera.width + '×' + camera.height + '</span>' +
-          '</div>' +
-          '<select id="debug-camera-preset" class="debug-panel__select" style="width:100%">' +
-            '<option value="1200x640">Desktop (1200×640)</option>' +
-            '<option value="844x390">iPhone 14 (844×390)</option>' +
-            '<option value="852x393">iPhone 15 (852×393)</option>' +
-            '<option value="932x430">iPhone 15 Pro Max (932×430)</option>' +
-            '<option value="800x360">Android (800×360)</option>' +
-            '<option value="915x412">Pixel 7 (915×412)</option>' +
-            '<option value="1024x768">iPad Mini (1024×768)</option>' +
-          '</select>' +
-        '</div>'
       ) +
 
       // Presets
@@ -833,20 +836,80 @@ function initDebugControls() {
   // --- Camera viewport preset ---
   var cameraPresetSelect = document.getElementById('debug-camera-preset');
   var cameraSizeVal = document.getElementById('debug-camera-size-val');
+
+  // Restore saved viewport preset
+  var savedViewport = localStorage.getItem('ss_viewport');
+  if (savedViewport) {
+    cameraPresetSelect.value = savedViewport;
+    applyCameraPreset(savedViewport, cameraSizeVal);
+  }
+
   cameraPresetSelect.addEventListener('change', function() {
-    var parts = this.value.split('x');
-    var w = parseInt(parts[0]);
-    var h = parseInt(parts[1]);
-    resizeCamera(w, h);
-    cameraSizeVal.textContent = w + '×' + h;
+    localStorage.setItem('ss_viewport', this.value);
+    applyCameraPreset(this.value, cameraSizeVal);
   });
+
+  // --- Render mode buttons ---
+  var savedRenderMode = localStorage.getItem('ss_renderMode') || 'fullscreen';
+  setRenderMode(savedRenderMode);
+
+  document.getElementById('debug-render-fullscreen').addEventListener('click', function() {
+    setRenderMode('fullscreen');
+    localStorage.setItem('ss_renderMode', 'fullscreen');
+  });
+
+  document.getElementById('debug-render-viewport').addEventListener('click', function() {
+    setRenderMode('viewport');
+    localStorage.setItem('ss_renderMode', 'viewport');
+  });
+}
+
+// 'fullscreen' = canvas 2x camera (dev border visible)
+// 'viewport' = canvas = camera (no border, game fills screen)
+var renderMode = 'fullscreen';
+
+function setRenderMode(mode) {
+  renderMode = mode;
+}
+
+function applyCameraPreset(value, labelEl) {
+  var parts = value.split('x');
+  var nativeW = parseInt(parts[0]);
+  var nativeH = parseInt(parts[1]);
+  var isDesktop = (nativeW === 1200 && nativeH === 640);
+
+  if (isDesktop) {
+    // Desktop: unlock aspect, use browser window
+    deviceAspectLock = null;
+    var aspect = window.innerWidth / window.innerHeight;
+    var camW = Math.round(640 * aspect);
+    resizeCamera(camW, 640);
+    if (labelEl) labelEl.textContent = camW + '×640';
+  } else {
+    // Device: lock to device aspect ratio, height always 640
+    var deviceAspect = nativeW / nativeH;
+    deviceAspectLock = deviceAspect;
+    var camW = Math.round(640 * deviceAspect);
+    resizeCamera(camW, 640);
+    if (labelEl) labelEl.textContent = camW + '×640';
+  }
 }
 
 function resizeCamera(w, h) {
   camera.width = w;
   camera.height = h;
-  camera.offsetX = (canvas.width - camera.width) / 2;
-  camera.offsetY = (canvas.height - camera.height) / 2;
+
+  // Canvas is always 2x camera for dev space
+  canvas.width = w * 2;
+  canvas.height = h * 2;
+  canvas.id.setAttribute('width', canvas.width);
+  canvas.id.setAttribute('height', canvas.height);
+
+  camera.offsetX = (canvas.width - w) / 2;
+  camera.offsetY = (canvas.height - h) / 2;
+
+  // Update mouse variables for new camera size
+  if (typeof setMouseVariables === 'function') setMouseVariables();
 
   // Rebuild game panel canvas (viewport-sized)
   gamePanel.canvas.width = w;
@@ -860,11 +923,23 @@ function resizeCamera(w, h) {
   pauseCanvas.canvas.width = w;
   pauseCanvas.canvas.height = h;
   pauseCanvas.context = pauseCanvas.canvas.getContext('2d');
+  repositionPauseButtons();
   drawPauseState();
 
   gameOver.canvas.width = w;
   gameOver.canvas.height = h;
   gameOver.context = gameOver.canvas.getContext('2d');
+  repositionGameOverButtons();
+
+  // Reposition menu elements to center of new camera
+  repositionPlayButton();
+  platform.posX = (w / 2) - (platform.width / 2);
+  platform.posY = (h / 2) - (platform.height / 2) + 120;
+  logo.posX = (w / 2) - (logo.width / 2);
+  logo.posY = (h / 2) - (logo.height / 2) - 120;
+  character.centerX = platform.posX + platform.width / 2;
+  character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
+  if (typeof createButtonGlowCanvas === 'function') createButtonGlowCanvas();
 
   // Rebuild menu canvas
   gameMenu.canvas.width = w;
@@ -876,15 +951,14 @@ function resizeCamera(w, h) {
   galaxyMaskCanvas.height = h;
   galaxyMaskCanvas.context = galaxyMaskCanvas.getContext('2d');
 
-  // Rebuild button glow canvases
-  if (typeof createButtonGlowCanvas === 'function') createButtonGlowCanvas();
-
   // Rebuild background clouds at new size
   backgroundClouds = [];
   smallClouds = [];
   tinyClouds = [];
   setupForeground();
 
-  // Rebuild background star panels and twinkles
+  // Rebuild background layers
+  createGalaxyLayer();
+  createForegroundGalaxy();
   setupBackgroundStars();
 }

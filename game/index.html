@@ -361,9 +361,12 @@
       height: 100vh;
       object-fit: contain;
     }
-    .scaled-mode #debug-panel,
-    .scaled-mode .layout__sidebar {
-      display: none !important;
+    @media (max-width: 1920px) {
+      .scaled-mode #debug-panel,
+      .scaled-mode .layout__sidebar,
+      .scaled-mode #autoplay-panel {
+        display: none !important;
+      }
     }
 
     /* Autoplay panel — fixed top-right overlay */
@@ -573,18 +576,8 @@
     restoreDefaultCanvas();
   }
 
-  // Auto-enter scaled mode on mobile
-  var mobileQuery = window.matchMedia('(max-width: 900px)');
-  if (mobileQuery.matches) {
-    enterScaledMode();
-  }
-  mobileQuery.addEventListener('change', function(e) {
-    if (e.matches) {
-      enterScaledMode();
-    } else if (!document.fullscreenElement) {
-      exitScaledMode();
-    }
-  });
+  // Always enter scaled mode
+  enterScaledMode();
 
   // Fullscreen button
   btn.addEventListener('click', function() {
@@ -594,7 +587,7 @@
       if (rfs) {
         rfs.call(el);
       } else {
-        // iOS fallback — no fullscreen API, just use scaled mode
+        // iOS fallback — toggle scaled mode
         if (body.classList.contains('scaled-mode')) {
           exitScaledMode();
         } else {
@@ -611,19 +604,12 @@
     if (document.fullscreenElement) {
       enterScaledMode();
     } else {
-      if (!mobileQuery.matches) {
-        exitScaledMode();
-      } else {
-        // Stay in scaled mode on mobile after exiting fullscreen
-        applyScaledCanvas();
-      }
+      applyScaledCanvas();
     }
   });
 
   window.addEventListener('resize', function() {
-    if (isScaled() || mobileQuery.matches) {
-      applyScaledCanvas();
-    }
+    applyScaledCanvas();
   });
 })();
 </script>

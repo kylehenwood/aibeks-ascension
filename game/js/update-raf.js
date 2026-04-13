@@ -48,12 +48,29 @@ function runGame(timestamp) {
   var cox = camera.offsetX;
   var coy = camera.offsetY;
 
+  // Fullscreen: background fills entire canvas (stars visible outside camera)
+  // Viewport: background clipped to camera region only
+  if (renderMode === 'fullscreen') {
+    drawBackground();
+  }
+
+  // Set up camera region — translate + clip so all game content is confined
+  canvas.context.save();
+  canvas.context.translate(cox, coy);
+  canvas.context.beginPath();
+  canvas.context.rect(0, 0, camera.width, camera.height);
+  canvas.context.clip();
+
+  if (renderMode === 'viewport') {
+    drawBackground();
+  }
+
   switch(gameState) {
     case 'loading':
     //Update
     updateLoading(gameLoading.context);
     // Draw
-    canvas.context.drawImage(gameLoading.canvas,cox,coy);
+    canvas.context.drawImage(gameLoading.canvas,0,0);
     break;
 
 
@@ -66,9 +83,6 @@ function runGame(timestamp) {
     // Update
     animateToMenu();
     // Draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     // Stage 10 first half: draw old game content as-is (no updateGame — prevents clearing)
     if (menuStage === 10 && !menuPanReset) {
@@ -105,7 +119,6 @@ function runGame(timestamp) {
       canvas.context.restore();
     }
     drawGameOverlay(canvas.context,'fade-out');
-    canvas.context.restore();
     break;
 
 
@@ -113,16 +126,12 @@ function runGame(timestamp) {
     //Update
     updateMenu();
     //Draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gameMenu.canvas,0,0);
     drawForeground(canvas.context,true);
     // Play button in front of clouds
     renderPlayButton();
     canvas.context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
-    canvas.context.restore();
     break;
     // Note: platform is drawn inside updateMenu via drawPlatformScene
 
@@ -131,9 +140,6 @@ function runGame(timestamp) {
     updateGame();
     updateCamera();
     // update
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
@@ -150,7 +156,6 @@ function runGame(timestamp) {
     drawNextStarIndicator(canvas.context);
     // pause icon
     drawPauseIcon();
-    canvas.context.restore();
 
     // game over condition
     if (character.centerY-(character.size/2) > camera.height) {
@@ -167,9 +172,6 @@ function runGame(timestamp) {
       updateGame();
     }
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
@@ -188,16 +190,12 @@ function runGame(timestamp) {
     if (restartPhase !== 'falling') {
       drawGameOverlay(canvas.context,'fade-out');
     }
-    canvas.context.restore();
     break;
 
 
     case 'starting':
     updateGame();
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     // Draw game panel (stars) with fade
     canvas.context.save();
@@ -207,7 +205,6 @@ function runGame(timestamp) {
     drawForeground(canvas.context,true);
     // Draw platform, character, logo (on top of everything)
     updateStart();
-    canvas.context.restore();
     break;
 
 
@@ -215,16 +212,12 @@ function runGame(timestamp) {
     camera.vx = 0;
     updateGameOver();
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
     canvas.context.drawImage(gameOver.canvas,0,0);
-    canvas.context.restore();
     break;
 
 
@@ -236,58 +229,43 @@ function runGame(timestamp) {
     // Accumulate horizontal scroll for background parallax (no vertical — bob is cosmetic)
     camera.scrollX += camera.vx * dt;
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
-    canvas.context.restore();
     break;
 
 
     case 'gamePaused':
     camera.vx = 0;
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,false);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
-    canvas.context.restore();
     break;
 
 
     case 'gameResume':
     //draw
-    drawBackground();
-    canvas.context.save();
-    canvas.context.translate(cox, coy);
     drawBackgroundClouds(canvas.context,false);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     // pause icon
     drawPauseIcon();
-    canvas.context.restore();
     break;
 
   }
 
-  //console.log(starCameraY);
-  //console.log(cameraY);
-  //console.log('-----');
-  // paint UI (positioned within camera region)
-  canvas.context.save();
-  canvas.context.translate(cox, coy);
+  // UI drawn inside the clipped camera region
   updateInterface();
+
+  // Restore from camera clip
   canvas.context.restore();
 
-  // Camera region border (in canvas-space)
+  // Camera region border (in canvas-space, outside clip)
   canvas.context.strokeStyle = '#fff';
   canvas.context.lineWidth = 4;
   canvas.context.strokeRect(cox, coy, camera.width, camera.height);

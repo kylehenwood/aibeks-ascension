@@ -62,8 +62,14 @@ function setupCanvas() {
     canvas.id = document.getElementById('js-starswinger');
     canvas.context = canvas.id.getContext("2d");
 
-    canvas.width = 2400;
-    canvas.height = 1280;
+    // Camera height is always 640; width adjusts to fill the screen aspect ratio
+    var aspect = window.innerWidth / window.innerHeight;
+    camera.width = Math.round(640 * aspect);
+    camera.height = 640;
+
+    // Canvas is larger than camera to provide dev space around the game region
+    canvas.width = camera.width * 2;
+    canvas.height = camera.height * 2;
 
     // set canvas width and height.
     canvas.id.setAttribute('width', canvas.width);
