@@ -62,7 +62,8 @@ function createDebugPanel() {
         toggleHTML('Show Trajectory', 'debug-show-trajectory', false, 'Visualize rope points and velocity vector') +
         toggleHTML('Immunity Power-up', 'debug-star-immunity', true, 'Allow collecting immunity from safe stars') +
         toggleHTML('Stars Can Die', 'debug-star-death', true, 'Stars become unsafe after their power drains') +
-        toggleHTML('Grapple Assist', 'debug-grapple-assist', false, 'Show optimal release angles for maximum forward momentum')
+        toggleHTML('Grapple Assist', 'debug-grapple-assist', false, 'Show optimal release angles for maximum forward momentum') +
+        toggleHTML('Character Debug', 'debug-character-debug', false, 'Show character position, camera, velocity and state overlay')
       ) +
 
       // Physics sliders
@@ -181,6 +182,7 @@ var debugDefaults = {
   immunityEnabled: false,
   starsCanDie: true,
   grappleAssist: false,
+  characterDebug: false,
   galaxyBlur: 0,
   galaxyBorder: false,
   fgGalaxyInClouds: false,
@@ -195,6 +197,7 @@ var debugGravityEnabled = debugDefaults.gravityEnabled;
 var debugImmunityEnabled = debugDefaults.immunityEnabled;
 var debugStarsCanDie = debugDefaults.starsCanDie;
 var debugGrappleAssist = debugDefaults.grappleAssist;
+var debugCharacterDebug = debugDefaults.characterDebug;
 var debugImmunityThreshold = debugDefaults.immunityThreshold;
 
 var DEBUG_STORAGE_KEY = 'starswinger-debug-settings';
@@ -225,6 +228,7 @@ function getDebugSettings() {
     immunityEnabled: debugImmunityEnabled,
     starsCanDie: debugStarsCanDie,
     grappleAssist: debugGrappleAssist,
+    characterDebug: debugCharacterDebug,
     galaxyBlur: galaxyBlur,
     galaxyBorder: galaxyBorder,
     fgGalaxyInClouds: fgGalaxyInClouds,
@@ -260,6 +264,7 @@ function applyDebugSettings(s) {
   if (s.immunityEnabled !== undefined) debugImmunityEnabled = s.immunityEnabled;
   if (s.starsCanDie !== undefined) debugStarsCanDie = s.starsCanDie;
   if (s.grappleAssist !== undefined) debugGrappleAssist = s.grappleAssist;
+  if (s.characterDebug !== undefined) debugCharacterDebug = s.characterDebug;
   if (s.galaxyBlur !== undefined) { galaxyBlur = s.galaxyBlur; localStorage.setItem('ss_galaxyBlur', galaxyBlur); }
   if (s.galaxyBorder !== undefined) galaxyBorder = s.galaxyBorder;
   if (s.fgGalaxyInClouds !== undefined) fgGalaxyInClouds = s.fgGalaxyInClouds;
@@ -314,6 +319,7 @@ function settingsToClipboard() {
     'debugImmunityEnabled = ' + s.immunityEnabled + ';',
     'debugStarsCanDie = ' + s.starsCanDie + ';',
     'debugGrappleAssist = ' + s.grappleAssist + ';',
+    'debugCharacterDebug = ' + s.characterDebug + ';',
     'testingBool = ' + s.showTrajectory + ';',
     'galaxyBlur = ' + s.galaxyBlur + ';',
     'galaxyBorder = ' + s.galaxyBorder + ';',
@@ -614,6 +620,12 @@ function initDebugControls() {
   grappleAssistToggle.checked = debugGrappleAssist;
   grappleAssistToggle.addEventListener('change', function() {
     debugGrappleAssist = this.checked;
+  });
+
+  var characterDebugToggle = document.getElementById('debug-character-debug');
+  characterDebugToggle.checked = debugCharacterDebug;
+  characterDebugToggle.addEventListener('change', function() {
+    debugCharacterDebug = this.checked;
   });
 
   // --- Visual controls ---

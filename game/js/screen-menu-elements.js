@@ -104,8 +104,6 @@ function updatePlayButton() {
   var lineAlpha = Math.min(t * 2, 1);
   var textT = Math.max(0, (t - 0.25) / 0.75);
   var textAlpha = textT * textT * (3 - 2 * textT); // smoothstep
-  var textSlide = (1 - textAlpha) * 14;
-
   context.clearRect(0, 0, playButton.width, playButton.height);
 
   // Line — grows from center + fades in
@@ -115,7 +113,7 @@ function updatePlayButton() {
   context.fillRect(offset, playButton.height / 2 + 8, width, 4);
   context.restore();
 
-  // Text — fades in + slides up into position
+  // Text — fades in
   if (textAlpha > 0) {
     context.save();
     context.globalAlpha = textAlpha;
@@ -123,7 +121,7 @@ function updatePlayButton() {
     context.font = 'bold 18px sans-serif';
     context.textBaseline = 'bottom';
     context.textAlign = 'center';
-    context.fillText('CLICK TO START', playButton.width / 2, playButton.height / 2 - 4 + textSlide);
+    context.fillText('CLICK TO START', playButton.width / 2, playButton.height / 2 - 4);
     context.restore();
   }
 }
@@ -140,7 +138,6 @@ function drawPlayButtonOutro(context, ease) {
   var lineAlpha = 1 - ease;
   var textT = Math.min(ease * 2.5, 1);
   var textAlpha = 1 - textT * textT * (3 - 2 * textT); // inverse smoothstep
-  var textSlide = textT * textT * (3 - 2 * textT) * 14;
 
   var lineMax = 160;
   var w = lineMax * lineProgress;
@@ -157,7 +154,7 @@ function drawPlayButtonOutro(context, ease) {
     context.restore();
   }
 
-  // Text fading out + sliding down
+  // Text fading out
   if (textAlpha > 0) {
     context.save();
     context.globalAlpha = textAlpha;
@@ -165,7 +162,7 @@ function drawPlayButtonOutro(context, ease) {
     context.font = 'bold 18px sans-serif';
     context.textBaseline = 'bottom';
     context.textAlign = 'center';
-    context.fillText('CLICK TO START', x + playButton.width / 2, y + playButton.height / 2 - 4 + textSlide);
+    context.fillText('CLICK TO START', x + playButton.width / 2, y + playButton.height / 2 - 4);
     context.restore();
   }
 }

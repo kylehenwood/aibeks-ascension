@@ -144,6 +144,40 @@ function drawMaskedButtonGlow(context, layer, x, y) {
   }
 }
 
+// Character glow — cyan blob that follows the character, masked through clouds
+var charGlowCanvas;
+
+function createCharGlowCanvas() {
+  // Pre-render a centered cyan blob; we'll position it at draw time
+  charGlowCanvas = document.createElement('canvas');
+  charGlowCanvas.width = 600;
+  charGlowCanvas.height = 600;
+  var ctx = charGlowCanvas.getContext('2d');
+  ctx.filter = 'blur(80px)';
+  ctx.fillStyle = 'cyan';
+  ctx.beginPath();
+  ctx.arc(300, 300, 200, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.filter = 'none';
+}
+
+function drawMaskedCharGlow(context, layer, lx, ly) {
+  var mc = galaxyMaskCanvas.context;
+  var maskCanvas = fgGalaxyUseBorder ? layer.strokeCanvas : layer.canvas;
+
+  // Character screen position
+  var cx = character.centerX + camera.x * parallax.gamePanel;
+  var cy = character.centerY + camera.y * parallax.gamePanel;
+
+  mc.clearRect(0, 0, camera.width, camera.height);
+  mc.globalCompositeOperation = 'source-over';
+  mc.drawImage(charGlowCanvas, cx - 300, cy - 300);
+  mc.globalCompositeOperation = 'destination-in';
+  mc.drawImage(maskCanvas, lx, ly);
+  mc.globalCompositeOperation = 'source-over';
+  context.drawImage(galaxyMaskCanvas, 0, 0);
+}
+
 function setupForeground() {
   // Create the reusable compositing canvas
   galaxyMaskCanvas = document.createElement('canvas');
@@ -164,6 +198,7 @@ function setupForeground() {
   createTinyCloud(camera.width * 3);
 
   createButtonGlowCanvas();
+  createCharGlowCanvas();
 }
 
 // HOW TO MAKE THE CLOUDS ENDLESS???
@@ -228,6 +263,17 @@ function drawForeground(context,isAnimating) {
         drawMaskedButtonGlow(context, tinyClouds[i], tinyClouds[i].posX, tinyCloudY);
       }
       context.restore();
+    }
+  }
+
+  // Character glow — cyan, masked through clouds (gameplay only)
+  if (gameState === 'playGame' || gameState === 'animateGameOver' || gameState === 'gameRestart') {
+    drawMaskedCharGlow(context, backgroundClouds[0], 0, backgroundCloudY);
+    for (var i = 0; i < smallClouds.length; i++) {
+      drawMaskedCharGlow(context, smallClouds[i], smallClouds[i].posX, smallCloudY);
+    }
+    for (var i = 0; i < tinyClouds.length; i++) {
+      drawMaskedCharGlow(context, tinyClouds[i], tinyClouds[i].posX, tinyCloudY);
     }
   }
 

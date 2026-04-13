@@ -144,11 +144,11 @@ function runGame(timestamp) {
     }
     //draw
     drawBackground();
+    drawCharacter(gamePanel.context);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
     canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
     canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
-    drawCharacter(gamePanel.context);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     if (restartPhase !== 'falling') {

@@ -97,7 +97,7 @@ function restartAnimation() {
       restartPhase = 'falling';
 
       character.centerX = starHooks[0].centerX - 240;
-      character.centerY = starHooks[0].centerY - camera.height;
+      character.centerY = -(character.size);
       physics.vx = 0;
       physics.vy = 0;
     }

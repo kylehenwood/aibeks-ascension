@@ -37,6 +37,17 @@ function createPanel() {
   generateStars();
 }
 
+// Check if a candidate grid position overlaps any existing star (64px tile size)
+function starOverlaps(gridPos) {
+  var size = gridSize.square; // 64
+  for (var i = 0; i < starHooks.length; i++) {
+    var dx = Math.abs(gridPos.positionX - starHooks[i].posX);
+    var dy = Math.abs(gridPos.positionY - starHooks[i].posY);
+    if (dx < size && dy < size) return true;
+  }
+  return false;
+}
+
 // Generate stars up to current gridSize.cols, continuing from last position
 function generateStars() {
   var totalCols = gridSize.cols;
@@ -62,23 +73,24 @@ function generateStars() {
       if (isFirst) {
         row = 1;
       } else {
-        // Pick a row that doesn't match the previous star's row
+        // Pick a row that doesn't overlap any existing star
         row = rand(0, gridSize.rows - 1);
-        if (starHooks.length > 0) {
-          var prevRow = infiniteGen.lastRow;
-          var attempts = 0;
-          while (row === prevRow && attempts < 10) {
-            row = rand(0, gridSize.rows - 1);
-            attempts++;
-          }
+        var attempts = 0;
+        while (attempts < 20) {
+          var candidatePos = col * gridSize.rows + row;
+          if (candidatePos < gridPositions.length && !starOverlaps(gridPositions[candidatePos])) break;
+          row = rand(0, gridSize.rows - 1);
+          attempts++;
         }
       }
 
       var position = col * gridSize.rows + row;
-      createHook(position, isFirst);
-      infiniteGen.totalStars++;
-      infiniteGen.lastRow = row;
-      isFirst = false;
+      if (position < gridPositions.length && !starOverlaps(gridPositions[position])) {
+        createHook(position, isFirst);
+        infiniteGen.totalStars++;
+        infiniteGen.lastRow = row;
+        isFirst = false;
+      }
     }
   }
 

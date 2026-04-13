@@ -244,7 +244,9 @@ function animateToMenu() {
     context.drawImage(logo.canvas, logo.posX, logo.posY);
 
     if (playButton.alpha >= 1 && playButton.progress >= 100) {
-      setPlayButton();
+      playButton.progress = 100;
+      playButton.alpha = 1;
+      renderPlayButton();
       menuStage = 0;
       logo.alpha = 0;
       gameState = "gameMenu";
