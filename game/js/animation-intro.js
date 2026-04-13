@@ -8,9 +8,6 @@ var intro = {
 }
 
 function setupIntro() {
-  backToMenu();
-  return;
-  
   gameState = 'gameIntro';
   menuStage = 1;
 

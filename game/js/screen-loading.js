@@ -4,7 +4,7 @@ var gameLoading = {
   canvas: null,
   context: null,
   progress: 0,
-  loadTime: 1000,
+  loadTime: 0,
   splashImg: null,
   splashReady: false
 }
@@ -13,7 +13,7 @@ function setupLoading() {
   gameState = 'loading';
 
   setTimeout(function(){
-    setupIntro();
+    setupMenu();
   },gameLoading.loadTime);
 
   gameLoading.canvas = document.createElement('canvas');

@@ -6,6 +6,9 @@ var backgroundClouds = [];
 // Cloud interaction particles
 var cloudParticles = [];
 
+// Reusable full-screen canvas for galaxy-through-stroke compositing
+var galaxyMaskCanvas;
+
 // Check if a screen position overlaps an actual cloud pixel
 function isInCloud(screenX, screenY) {
   // Check each cloud layer
@@ -76,6 +79,12 @@ function updateCloudParticles(context) {
 }
 
 function setupForeground() {
+  // Create the reusable compositing canvas
+  galaxyMaskCanvas = document.createElement('canvas');
+  galaxyMaskCanvas.width = camera.width;
+  galaxyMaskCanvas.height = camera.height;
+  galaxyMaskCanvas.context = galaxyMaskCanvas.getContext('2d');
+
   createBackgroundCloud(0);
   createBackgroundCloud(camera.width);
 
@@ -155,8 +164,32 @@ function cloudMove(context,cloudLayer,cloudOther,posX,posY,drawOffX,drawOffY) {
   }
   var ox = drawOffX || 0;
   var oy = drawOffY || 0;
+
+  // Draw cloud fills
   context.drawImage(cloudLayer.canvas,cloudLayer.posX+ox,posY+oy);
   context.drawImage(cloudOther.canvas,cloudOther.posX+ox,posY+oy);
+
+  // DEBUG: draw stroke canvases directly to see their shape
+  context.drawImage(cloudLayer.strokeCanvas, cloudLayer.posX + ox, posY + oy);
+  context.drawImage(cloudOther.strokeCanvas, cloudOther.posX + ox, posY + oy);
+
+  // // Draw galaxy revealed through cloud strokes
+  // var mc = galaxyMaskCanvas.context;
+  // mc.clearRect(0, 0, camera.width, camera.height);
+  //
+  // // Draw stroke masks at their screen positions
+  // mc.globalCompositeOperation = 'source-over';
+  // mc.drawImage(cloudLayer.strokeCanvas, cloudLayer.posX + ox, posY + oy);
+  // mc.drawImage(cloudOther.strokeCanvas, cloudOther.posX + ox, posY + oy);
+  //
+  // // Galaxy only shows where strokes exist
+  // mc.globalCompositeOperation = 'source-in';
+  // drawGalaxyToContext(mc, camera.width, camera.height);
+  //
+  // mc.globalCompositeOperation = 'source-over';
+  //
+  // // Composite result onto main canvas
+  // context.drawImage(galaxyMaskCanvas, 0, 0);
 }
 
 
@@ -166,6 +199,7 @@ function createBackgroundCloud(posX) {
   var backgroundCloud = {
     canvas: null,
     context: null,
+    strokeCanvas: null,
     posX: posX
   }
 
@@ -182,12 +216,19 @@ function createBackgroundCloud(posX) {
   backgroundCloud.context.fill();
   backgroundCloud.context.closePath();
 
-  // cloud line cap
-  // backgroundCloud.context.beginPath();
-  // backgroundCloud.context.rect(0,120,1,160);
-  // backgroundCloud.context.fillStyle = 'rgba(255,0,0,1)';
-  // backgroundCloud.context.fill();
-  // backgroundCloud.context.closePath();
+  // Stroke canvas — 4px outline for galaxy masking
+  backgroundCloud.strokeCanvas = document.createElement('canvas');
+  backgroundCloud.strokeCanvas.width = camera.width;
+  backgroundCloud.strokeCanvas.height = 400;
+  var sc = backgroundCloud.strokeCanvas.getContext('2d');
+  // Gradient from blue (top) to red (bottom) — spans cloud height
+  var grad = sc.createLinearGradient(0, 140, 0, 140 + 160);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(1, 'rgba(255,255,255,1)');
+  // Fill cloud rect then clear inset by 4px to get an inner border
+  sc.fillStyle = grad;
+  sc.fillRect(0, 140, backgroundCloud.canvas.width, 160);
+  sc.clearRect(0 + 4, 140 + 4, backgroundCloud.canvas.width - 8, 160 - 8);
 
   backgroundClouds.push(backgroundCloud);
 }
@@ -198,6 +239,7 @@ function createSmallCloud(posX) {
   var smallCloud = {
     canvas: null,
     context: null,
+    strokeCanvas: null,
     posX: posX
   }
 
@@ -205,6 +247,12 @@ function createSmallCloud(posX) {
   smallCloud.canvas.width = camera.width;
   smallCloud.canvas.height = 400;
   smallCloud.context = smallCloud.canvas.getContext('2d');
+
+  // Stroke canvas for galaxy masking
+  smallCloud.strokeCanvas = document.createElement('canvas');
+  smallCloud.strokeCanvas.width = camera.width;
+  smallCloud.strokeCanvas.height = 400;
+  var sc = smallCloud.strokeCanvas.getContext('2d');
 
   var context = smallCloud.context;
 
@@ -230,8 +278,16 @@ function createSmallCloud(posX) {
       context.fillStyle = 'rgba(255,255,255,'+cloudFill+')';
       context.fillRect(width,cloudPosY,cloudWidth,cloudHeight);
       context.closePath();
+
+      // 4px inner stroke — gradient spans this cloud's height
+      var grad = sc.createLinearGradient(0, cloudPosY, 0, cloudPosY + cloudHeight);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      sc.fillStyle = grad;
+      sc.fillRect(width, cloudPosY, cloudWidth, cloudHeight);
+      sc.clearRect(width + 4, cloudPosY + 4, cloudWidth - 8, cloudHeight - 8);
     }
-    width += cloudWidth+(24*rand(1,2));
+    width += cloudWidth+(12*rand(1,2));
   }
   smallClouds.push(smallCloud);
 }
@@ -241,6 +297,7 @@ function createTinyCloud(posX) {
   var tinyCloud = {
     canvas: null,
     context: null,
+    strokeCanvas: null,
     posX: posX
   }
 
@@ -248,6 +305,12 @@ function createTinyCloud(posX) {
   tinyCloud.canvas.width = camera.width;
   tinyCloud.canvas.height = 400;
   tinyCloud.context = tinyCloud.canvas.getContext('2d');
+
+  // Stroke canvas for galaxy masking
+  tinyCloud.strokeCanvas = document.createElement('canvas');
+  tinyCloud.strokeCanvas.width = camera.width;
+  tinyCloud.strokeCanvas.height = 400;
+  var sc = tinyCloud.strokeCanvas.getContext('2d');
 
   var context = tinyCloud.context;
 
@@ -272,8 +335,16 @@ function createTinyCloud(posX) {
       context.fillStyle = 'rgba(255,255,255,0.6)';
       context.fillRect(width,cloudPosY,cloudWidth,cloudHeight);
       context.closePath();
+
+      // 4px inner stroke — gradient spans this cloud's height
+      var grad = sc.createLinearGradient(0, cloudPosY, 0, cloudPosY + cloudHeight);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      sc.fillStyle = grad;
+      sc.fillRect(width, cloudPosY, cloudWidth, cloudHeight);
+      sc.clearRect(width + 4, cloudPosY + 4, cloudWidth - 8, cloudHeight - 8);
     }
-    width += cloudWidth+(24*rand(2,4));
+    width += cloudWidth+(12*rand(2,4));
   }
 
   tinyClouds.push(tinyCloud);

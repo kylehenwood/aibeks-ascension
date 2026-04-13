@@ -90,6 +90,7 @@ var starImmunity = {
 // < 1 = behind (moves slower than camera, appears distant)
 // > 1 = in front (moves faster than camera, appears close)
 var parallax = {
+  galaxy:   0.03,    // galaxy blobs (deepest layer)
   bgStars1: 0.05,    // very distant tiny stars
   bgStars2: 0.15,    // distant stars
   bgStars3: 0.3,     // mid stars

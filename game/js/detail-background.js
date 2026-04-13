@@ -3,13 +3,78 @@
 
 var starLayers = [];
 var twinkleStars = [];
+var galaxyCanvas;
 
 function setupBackground() {
+  createGalaxyLayer();
   setupBackgroundStars();
 }
 
 function drawBackground() {
+  drawGalaxyLayer();
   drawBackgroundStars();
+}
+
+function createGalaxyLayer() {
+  galaxyCanvas = document.createElement('canvas');
+  galaxyCanvas.width = camera.width;
+  galaxyCanvas.height = camera.height;
+  var ctx = galaxyCanvas.getContext('2d');
+
+  var blobCount = 5 + rand(0, 4);
+  for (var i = 0; i < blobCount; i++) {
+    var x = rand(0, camera.width);
+    var y = rand(0, camera.height);
+    var radius = rand(100, 240);
+    var gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+  }
+}
+
+// Draw galaxy blobs as tiling background (deepest layer)
+function drawGalaxyLayer() {
+  var w = camera.width;
+  var h = camera.height;
+  var depth = parallax.galaxy;
+  var offsetX = camera.scrollX * depth;
+  var offsetY = camera.scrollY * depth;
+  var tileX = ((offsetX % w) + w) % w;
+  var tileY = ((offsetY % h) + h) % h;
+
+  for (var tx = -1; tx <= 1; tx++) {
+    for (var ty = -1; ty <= 1; ty++) {
+      var drawX = tileX + tx * w;
+      var drawY = tileY + ty * h;
+      if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
+        canvas.context.drawImage(galaxyCanvas, drawX, drawY);
+      }
+    }
+  }
+}
+
+// Draw galaxy blobs onto an arbitrary context at given offsets (for cloud masking)
+function drawGalaxyToContext(ctx, w, h) {
+  var depth = parallax.galaxy;
+  var offsetX = camera.scrollX * depth;
+  var offsetY = camera.scrollY * depth;
+  var tileX = ((offsetX % w) + w) % w;
+  var tileY = ((offsetY % h) + h) % h;
+
+  for (var tx = -1; tx <= 1; tx++) {
+    for (var ty = -1; ty <= 1; ty++) {
+      var drawX = tileX + tx * w;
+      var drawY = tileY + ty * h;
+      if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
+        ctx.drawImage(galaxyCanvas, drawX, drawY);
+      }
+    }
+  }
 }
 
 function createStarPanel(density, size) {
