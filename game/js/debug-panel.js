@@ -848,7 +848,8 @@ function resizeCamera(w, h) {
   camera.offsetX = (canvas.width - camera.width) / 2;
   camera.offsetY = (canvas.height - camera.height) / 2;
 
-  // Rebuild game panel canvas
+  // Rebuild game panel canvas (viewport-sized)
+  gamePanel.canvas.width = w;
   gamePanel.canvas.height = h;
   gamePanel.context = gamePanel.canvas.getContext('2d');
 

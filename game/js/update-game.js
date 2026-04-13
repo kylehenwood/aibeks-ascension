@@ -1,6 +1,6 @@
 
-// paint game canvas & hooks + clear visible area(not entire gameCanvas)
-// updates the game canvas layer
+// paint game canvas & hooks
+// updates the game canvas layer (viewport-sized, drawn at screen coordinates)
 // controls when there needs to be more panels created.
 // animates the currently selected star
 function updateGame() {
@@ -11,10 +11,18 @@ function updateGame() {
   var gameCanvas = gamePanel.canvas;
   var gameContext = gamePanel.context;
 
-  // Clear only visible area for performance on large canvases
-  var viewLeft = Math.max(0, -camera.x - 200);
-  var viewRight = Math.min(gameCanvas.width, -camera.x + camera.width + 200);
-  gameContext.clearRect(viewLeft, 0, viewRight - viewLeft, camera.height);
+  // Clear entire viewport-sized canvas
+  gameContext.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+  // Translate so world coordinates map to screen positions
+  var gpx = camera.x * parallax.gamePanel;
+  var gpy = camera.y * parallax.gamePanel;
+  gameContext.save();
+  gameContext.translate(gpx, gpy);
+
+  // Visible world range (for culling)
+  var viewLeft = -gpx - 200;
+  var viewRight = -gpx + camera.width + 200;
 
   // Update distance score (furthest X reached)
   if (character.centerX > infiniteGen.startX) {
@@ -70,4 +78,6 @@ function updateGame() {
       gameContext.drawImage(hook.layer, hook.posX, hook.posY);
     }
   }
+
+  gameContext.restore();
 }

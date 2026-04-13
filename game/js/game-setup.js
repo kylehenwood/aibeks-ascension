@@ -8,7 +8,7 @@ var gamePanel = {
 
 function setupGameCanvas() {
   gamePanel.canvas = document.createElement('canvas');
-  gamePanel.canvas.width = infiniteGen.canvasWidth;
+  gamePanel.canvas.width = camera.width;
   gamePanel.canvas.height = camera.height;
   gamePanel.context = gamePanel.canvas.getContext('2d');
 }

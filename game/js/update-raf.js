@@ -73,8 +73,11 @@ function runGame(timestamp) {
     if (menuStage === 10 && !menuPanReset) {
       var gpx = camera.x * parallax.gamePanel;
       var gpy = camera.y * parallax.gamePanel;
-      canvas.context.drawImage(gamePanel.canvas, gpx, gpy);
-      canvas.context.drawImage(clickAreas.canvas, gpx, gpy);
+      // Offset game panel by camera.y so stars follow the vertical sweep
+      canvas.context.save();
+      canvas.context.translate(0, gpy);
+      canvas.context.drawImage(gamePanel.canvas, 0, 0);
+      canvas.context.restore();
     }
     drawForeground(canvas.context,true);
     // Stage 10 first half: draw exiting platform and character in front of clouds
@@ -133,8 +136,7 @@ function runGame(timestamp) {
     canvas.context.translate(cox, coy);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     // Platform slides off left after game starts
     drawExitingPlatform(canvas.context);
@@ -169,8 +171,11 @@ function runGame(timestamp) {
     canvas.context.translate(cox, coy);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    // Offset game panel by camera.y so stars follow the vertical sweep
+    canvas.context.save();
+    canvas.context.translate(0, gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
+    canvas.context.restore();
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     // Character drawn after foreground so it's always in front of parallax
@@ -194,10 +199,7 @@ function runGame(timestamp) {
     // Draw game panel (stars) with fade
     canvas.context.save();
     canvas.context.globalAlpha = hookAlpha;
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     canvas.context.restore();
     drawForeground(canvas.context,true);
     // Draw platform, character, logo (on top of everything)
@@ -208,14 +210,12 @@ function runGame(timestamp) {
 
     case 'gameOver':
     camera.vx = 0;
+    updateGameOver();
     //draw
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
@@ -235,10 +235,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
@@ -253,10 +250,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     canvas.context.restore();
@@ -268,10 +262,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
-    var gpx = camera.x * parallax.gamePanel;
-    var gpy = camera.y * parallax.gamePanel;
-    canvas.context.drawImage(gamePanel.canvas,gpx,gpy);
-    canvas.context.drawImage(clickAreas.canvas,gpx,gpy);
+    canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     // pause icon
