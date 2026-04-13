@@ -64,9 +64,7 @@ function updateMenu() {
   // context.drawImage(soundButton.canvas, soundButton.posX, soundButton.posY);
   // context.drawImage(settingsButton.canvas, settingsButton.posX, settingsButton.posY);
 
-  // play button — re-render for hover/press state
-  renderPlayButton();
-  context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
+  // play button drawn in RAF after foreground clouds so it's always in front
 }
 
 // Unified platform drawing — called every frame in all game states.
@@ -90,9 +88,6 @@ function drawPlatformScene(context, cameraOffset) {
   var offset = cameraOffset || 0;
   var platY = platform.posY + platform.hover + offset * parallax.platform;
 
-  // floating rocks — closer parallax than platform
-  drawFloatingRocks(context, platY, offset, platform.posX);
-
   // platform
   context.drawImage(platform.canvas, platform.posX, platY);
 
@@ -100,4 +95,7 @@ function drawPlatformScene(context, cameraOffset) {
   var fireCx = platform.posX + platform.width * 0.3;
   var fireBaseY = platY + 32;
   drawCampfireFlames(context, fireCx, fireBaseY, platform.time, 1.6);
+
+  // floating rocks — drawn in front of platform
+  drawFloatingRocks(context, platY, offset, platform.posX);
 }

@@ -12,6 +12,10 @@ function restartGame() {
   restartCamYStart = camera.y;
   camera.target = null;
   detach();
+
+  // Position character at horizontal center, well below camera
+  character.centerX = -camera.x + camera.width / 2;
+  character.centerY = camera.height + 1200;
 }
 
 // Restart animation — single continuous sweep:
@@ -50,6 +54,17 @@ function restartAnimation() {
     camera.vy = camera.y - prevCamY;
     camera.scrollX += camera.vx * dt;
     camera.scrollY += camera.vy;
+
+    // Character floats through the transition with a sine wave (+400 to -400 from center)
+    var charScreenY = 560 + Math.sin(restartProgress * Math.PI * 2 + Math.PI / 2) * 640;
+    if (charScreenY < -character.size) {
+      // Once above the camera, remove from view for the rest of the transition
+      character.centerX = -9999;
+      character.centerY = -9999;
+    } else if (character.centerX !== -9999) {
+      character.centerX = -camera.x + camera.width / 2;
+      character.centerY = charScreenY - camera.y;
+    }
 
     // Swap at midpoint — content is off screen, camera moving fastest
     if (!restartGameReset && restartProgress >= 0.5) {

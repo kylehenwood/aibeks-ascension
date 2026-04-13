@@ -70,10 +70,10 @@ function drawExitingPlatform(context) {
     start.platformSurface = null;
     return;
   }
-  drawFloatingRocks(context, platScreenY, 0, platScreenX);
   context.drawImage(platform.canvas, platScreenX, platScreenY);
   var fireCx = platScreenX + platform.width * 0.3;
   drawCampfireFlames(context, fireCx, platScreenY + 32, platform.time, 1.6);
+  drawFloatingRocks(context, platScreenY, 0, platScreenX);
 }
 
 var start = {
@@ -144,9 +144,9 @@ function updateStart() {
 
     // Draw platform (stationary)
     context.drawImage(platform.canvas, platScreenX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, platScreenX);
     var fireCx = platScreenX + platform.width * 0.3;
     drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
+    drawFloatingRocks(context, hoverY, 0, platScreenX);
 
     // Draw character on the platform
     drawCharacter(context);
@@ -183,9 +183,9 @@ function updateStart() {
 
     // keep drawing platform
     context.drawImage(platform.canvas, platScreenX, hoverY);
-    drawFloatingRocks(context, hoverY, 0, platScreenX);
     var fireCx = platScreenX + platform.width * 0.3;
     drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
+    drawFloatingRocks(context, hoverY, 0, platScreenX);
 
     drawCharacter(context);
 
@@ -212,9 +212,9 @@ function updateStart() {
       var platScreenX = start.platformStartX + camera.x * start.platformParallax;
       var hoverY = platform.posY + platform.hover;
       context.drawImage(platform.canvas, platScreenX, hoverY);
-      drawFloatingRocks(context, hoverY, 0, platScreenX);
       var fireCx = platScreenX + platform.width * 0.3;
       drawCampfireFlames(context, fireCx, hoverY + 32, platform.time, 1.6);
+      drawFloatingRocks(context, hoverY, 0, platScreenX);
 
       drawCharacter(context);
 

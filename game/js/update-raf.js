@@ -69,6 +69,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     // Stage 10 first half: draw old game content as-is (no updateGame — prevents clearing)
     if (menuStage === 10 && !menuPanReset) {
       var gpx = camera.x * parallax.gamePanel;
@@ -78,13 +79,7 @@ function runGame(timestamp) {
       canvas.context.translate(0, gpy);
       canvas.context.drawImage(gamePanel.canvas, 0, 0);
       canvas.context.restore();
-    }
-    drawForeground(canvas.context,true);
-    // Stage 10 first half: draw exiting platform and character in front of clouds
-    if (menuStage === 10 && !menuPanReset) {
       drawExitingPlatform(canvas.context);
-      var gpx = camera.x * parallax.gamePanel;
-      var gpy = camera.y * parallax.gamePanel;
       canvas.context.save();
       canvas.context.translate(gpx, gpy);
       drawCharacter(canvas.context);
@@ -101,6 +96,7 @@ function runGame(timestamp) {
       }
       drawCharacter(canvas.context);
     }
+    drawForeground(canvas.context,true);
     // Play button in front of clouds (stage 3 intro)
     if (menuStage === 3 && playButton.alpha > 0) {
       canvas.context.save();
@@ -120,8 +116,12 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
-    drawForeground(canvas.context,true);
+    drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gameMenu.canvas,0,0);
+    drawForeground(canvas.context,true);
+    // Play button in front of clouds
+    renderPlayButton();
+    canvas.context.drawImage(playButton.canvas, playButton.posX, playButton.posY);
     canvas.context.restore();
     break;
     // Note: platform is drawn inside updateMenu via drawPlatformScene
@@ -134,6 +134,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
     canvas.context.drawImage(gamePanel.canvas,0,0);
@@ -169,6 +170,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
     // Offset game panel by camera.y so stars follow the vertical sweep
@@ -196,6 +198,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     // Draw game panel (stars) with fade
     canvas.context.save();
     canvas.context.globalAlpha = hookAlpha;
@@ -215,6 +218,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
@@ -235,11 +239,11 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
     drawGameOverlay(canvas.context,'fade-in');
-    drawCharacter(canvas.context);
     canvas.context.restore();
     break;
 
@@ -250,6 +254,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,false);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
@@ -262,6 +267,7 @@ function runGame(timestamp) {
     drawBackground();
     canvas.context.save();
     canvas.context.translate(cox, coy);
+    drawBackgroundClouds(canvas.context,false);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     drawForeground(canvas.context,false);
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
