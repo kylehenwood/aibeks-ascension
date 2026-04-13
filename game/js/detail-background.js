@@ -4,9 +4,18 @@
 var starLayers = [];
 var twinkleStars = [];
 var galaxyCanvas;
+var galaxyBlur = 0;
+var galaxyBorder = false;
+var fgGalaxyDirect = true;
+var fgGalaxyInClouds = true;
+
+var fgGalaxyCanvas;
+var fgGalaxyBlur = 0;
+var fgGalaxyOpacity = 1;
 
 function setupBackground() {
   createGalaxyLayer();
+  createForegroundGalaxy();
   setupBackgroundStars();
 }
 
@@ -15,66 +24,129 @@ function drawBackground() {
   drawBackgroundStars();
 }
 
-function createGalaxyLayer() {
-  galaxyCanvas = document.createElement('canvas');
-  galaxyCanvas.width = camera.width;
-  galaxyCanvas.height = camera.height;
-  var ctx = galaxyCanvas.getContext('2d');
+// Stored blob positions so we can regenerate with different blur
+var galaxyBlobs = [];
 
+function createGalaxyBlobs() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+  var maxRadius = 240;
+  galaxyBlobs = [];
   var blobCount = 5 + rand(0, 4);
   for (var i = 0; i < blobCount; i++) {
-    var x = rand(0, camera.width);
-    var y = rand(0, camera.height);
-    var radius = rand(100, 240);
-    var gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.12)');
-    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
-    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    var radius = rand(100, maxRadius);
+    // Inset by radius + max blur margin so nothing bleeds past edges (tileable)
+    var margin = radius + Math.max(galaxyBlur, fgGalaxyBlur);
+    galaxyBlobs.push({
+      x: rand(margin, gw - margin),
+      y: rand(margin, gh - margin),
+      radius: radius
+    });
+  }
+}
+
+function createGalaxyLayer() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+
+  galaxyCanvas = document.createElement('canvas');
+  galaxyCanvas.width = gw;
+  galaxyCanvas.height = gh;
+  var ctx = galaxyCanvas.getContext('2d');
+
+  // Generate blob positions on first call
+  if (galaxyBlobs.length === 0) {
+    createGalaxyBlobs();
+  }
+
+  // Apply blur filter if set
+  if (galaxyBlur > 0) {
+    ctx.filter = 'blur(' + galaxyBlur + 'px)';
+  }
+
+  // Draw solid white circles
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+  for (var i = 0; i < galaxyBlobs.length; i++) {
+    var b = galaxyBlobs[i];
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = gradient;
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  ctx.filter = 'none';
 }
 
-// Draw galaxy blobs as tiling background (deepest layer)
+// Shared tiling helper — draws a galaxy canvas with overlap and optional debug border
+function tileGalaxy(targetCtx, galaxyImg, blur, vw, vh) {
+  var gw = galaxyImg.width;
+  var gh = galaxyImg.height;
+  var stepX = gw - blur;
+  var stepY = gh - blur;
+  var depth = parallax.galaxy;
+  var offsetX = camera.scrollX * depth - (gw - vw) / 2;
+  var offsetY = camera.scrollY * depth - (gh - vh) / 2;
+  var tileX = ((offsetX % stepX) + stepX) % stepX;
+  var tileY = ((offsetY % stepY) + stepY) % stepY;
+
+  for (var tx = -1; tx <= 1; tx++) {
+    for (var ty = -1; ty <= 1; ty++) {
+      var drawX = tileX + tx * stepX;
+      var drawY = tileY + ty * stepY;
+      if (drawX + gw > 0 && drawX < vw && drawY + gh > 0 && drawY < vh) {
+        targetCtx.drawImage(galaxyImg, drawX, drawY);
+        if (galaxyBorder) {
+          targetCtx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+          targetCtx.lineWidth = 2;
+          targetCtx.strokeRect(drawX, drawY, gw, gh);
+        }
+      }
+    }
+  }
+}
+
+// Draw background galaxy (white blobs behind stars)
 function drawGalaxyLayer() {
-  var w = camera.width;
-  var h = camera.height;
-  var depth = parallax.galaxy;
-  var offsetX = camera.scrollX * depth;
-  var offsetY = camera.scrollY * depth;
-  var tileX = ((offsetX % w) + w) % w;
-  var tileY = ((offsetY % h) + h) % h;
-
-  for (var tx = -1; tx <= 1; tx++) {
-    for (var ty = -1; ty <= 1; ty++) {
-      var drawX = tileX + tx * w;
-      var drawY = tileY + ty * h;
-      if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
-        canvas.context.drawImage(galaxyCanvas, drawX, drawY);
-      }
-    }
-  }
+  tileGalaxy(canvas.context, galaxyCanvas, galaxyBlur, camera.width, camera.height);
 }
 
-// Draw galaxy blobs onto an arbitrary context at given offsets (for cloud masking)
+// Draw background galaxy onto an arbitrary context (for cloud masking — currently unused)
 function drawGalaxyToContext(ctx, w, h) {
-  var depth = parallax.galaxy;
-  var offsetX = camera.scrollX * depth;
-  var offsetY = camera.scrollY * depth;
-  var tileX = ((offsetX % w) + w) % w;
-  var tileY = ((offsetY % h) + h) % h;
+  tileGalaxy(ctx, galaxyCanvas, galaxyBlur, w, h);
+}
 
-  for (var tx = -1; tx <= 1; tx++) {
-    for (var ty = -1; ty <= 1; ty++) {
-      var drawX = tileX + tx * w;
-      var drawY = tileY + ty * h;
-      if (drawX + w > 0 && drawX < w && drawY + h > 0 && drawY < h) {
-        ctx.drawImage(galaxyCanvas, drawX, drawY);
-      }
-    }
+// Draw foreground galaxy (green blobs) onto an arbitrary context
+function drawFgGalaxyToContext(ctx, w, h) {
+  tileGalaxy(ctx, fgGalaxyCanvas, fgGalaxyBlur, w, h);
+}
+
+// Create the foreground galaxy — same blob layout, bright green
+function createForegroundGalaxy() {
+  var gw = camera.width * 2;
+  var gh = camera.height * 2;
+
+  fgGalaxyCanvas = document.createElement('canvas');
+  fgGalaxyCanvas.width = gw;
+  fgGalaxyCanvas.height = gh;
+  var ctx = fgGalaxyCanvas.getContext('2d');
+
+  // Generate blob positions if not yet created
+  if (galaxyBlobs.length === 0) {
+    createGalaxyBlobs();
   }
+
+  if (fgGalaxyBlur > 0) {
+    ctx.filter = 'blur(' + fgGalaxyBlur + 'px)';
+  }
+
+  ctx.fillStyle = 'rgba(0, 255, 50, ' + fgGalaxyOpacity + ')';
+  for (var i = 0; i < galaxyBlobs.length; i++) {
+    var b = galaxyBlobs[i];
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.filter = 'none';
 }
 
 function createStarPanel(density, size) {

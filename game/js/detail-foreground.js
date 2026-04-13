@@ -86,7 +86,6 @@ function setupForeground() {
   galaxyMaskCanvas.context = galaxyMaskCanvas.getContext('2d');
 
   createBackgroundCloud(0);
-  createBackgroundCloud(camera.width);
 
   createSmallCloud(0);
   createSmallCloud(camera.width);
@@ -128,8 +127,15 @@ function drawForeground(context,isAnimating) {
     x3 -= 0.3*dt;
   }
 
+  // Background cloud: static X, parallax Y only
   var backgroundCloudY = (camera.height-200)+y1;
-  cloudMove(context,backgroundClouds[0],backgroundClouds[1],x1,backgroundCloudY,mouseOffX1,mouseOffY1);
+  var bgOy = mouseOffY1 || 0;
+
+  // FG galaxy masked by background cloud strokes
+  if (fgGalaxyInClouds) {
+    drawMaskedFgGalaxy(context, [backgroundClouds[0]], [0], [backgroundCloudY + bgOy]);
+  }
+  context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY + bgOy);
 
   var smallCloudY = (camera.height-200)+y2;
   cloudMove(context,smallClouds[0],smallClouds[1],x2,smallCloudY,mouseOffX2,mouseOffY2);
@@ -137,10 +143,29 @@ function drawForeground(context,isAnimating) {
   var tinyCloudY = (camera.height-200)+y3;
   cloudMove(context,tinyClouds[0],tinyClouds[1],x3,tinyCloudY,mouseOffX3,mouseOffY3);
 
+  // Direct foreground galaxy — rendered in front of all clouds
+  if (fgGalaxyDirect) {
+    drawFgGalaxyToContext(context, camera.width, camera.height);
+  }
+
   // Cloud interaction particles
   if (gameState === 'playGame' || gameState === 'animateGameOver') {
     updateCloudParticles(context);
   }
+}
+
+// Draw foreground galaxy masked through stroke canvases
+function drawMaskedFgGalaxy(context, layers, xPositions, yPositions) {
+  var mc = galaxyMaskCanvas.context;
+  mc.clearRect(0, 0, camera.width, camera.height);
+  mc.globalCompositeOperation = 'source-over';
+  for (var i = 0; i < layers.length; i++) {
+    mc.drawImage(layers[i].strokeCanvas, xPositions[i], yPositions[i]);
+  }
+  mc.globalCompositeOperation = 'source-in';
+  drawFgGalaxyToContext(mc, camera.width, camera.height);
+  mc.globalCompositeOperation = 'source-over';
+  context.drawImage(galaxyMaskCanvas, 0, 0);
 }
 
 
@@ -165,31 +190,18 @@ function cloudMove(context,cloudLayer,cloudOther,posX,posY,drawOffX,drawOffY) {
   var ox = drawOffX || 0;
   var oy = drawOffY || 0;
 
+  // FG galaxy masked by cloud strokes
+  if (fgGalaxyInClouds) {
+    drawMaskedFgGalaxy(context,
+      [cloudLayer, cloudOther],
+      [cloudLayer.posX + ox, cloudOther.posX + ox],
+      [posY + oy, posY + oy]
+    );
+  }
+
   // Draw cloud fills
   context.drawImage(cloudLayer.canvas,cloudLayer.posX+ox,posY+oy);
   context.drawImage(cloudOther.canvas,cloudOther.posX+ox,posY+oy);
-
-  // DEBUG: draw stroke canvases directly to see their shape
-  context.drawImage(cloudLayer.strokeCanvas, cloudLayer.posX + ox, posY + oy);
-  context.drawImage(cloudOther.strokeCanvas, cloudOther.posX + ox, posY + oy);
-
-  // // Draw galaxy revealed through cloud strokes
-  // var mc = galaxyMaskCanvas.context;
-  // mc.clearRect(0, 0, camera.width, camera.height);
-  //
-  // // Draw stroke masks at their screen positions
-  // mc.globalCompositeOperation = 'source-over';
-  // mc.drawImage(cloudLayer.strokeCanvas, cloudLayer.posX + ox, posY + oy);
-  // mc.drawImage(cloudOther.strokeCanvas, cloudOther.posX + ox, posY + oy);
-  //
-  // // Galaxy only shows where strokes exist
-  // mc.globalCompositeOperation = 'source-in';
-  // drawGalaxyToContext(mc, camera.width, camera.height);
-  //
-  // mc.globalCompositeOperation = 'source-over';
-  //
-  // // Composite result onto main canvas
-  // context.drawImage(galaxyMaskCanvas, 0, 0);
 }
 
 
