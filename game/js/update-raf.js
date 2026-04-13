@@ -44,6 +44,10 @@ function runGame(timestamp) {
 
   clear(canvas);
 
+  // Apply render scale — all subsequent drawing is in logical coordinates
+  canvas.context.save();
+  canvas.context.scale(renderScale, renderScale);
+
   // Camera offset — centers gameplay region within the larger canvas
   var cox = camera.offsetX;
   var coy = camera.offsetY;
@@ -144,9 +148,9 @@ function runGame(timestamp) {
     var gpx = camera.x * parallax.gamePanel;
     var gpy = camera.y * parallax.gamePanel;
     canvas.context.drawImage(gamePanel.canvas,0,0);
-    drawForeground(canvas.context,true);
-    // Platform slides off left after game starts
+    // Platform behind foreground clouds (same z-index as menu)
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     // Character drawn after foreground so it's always in front of parallax
     canvas.context.save();
     canvas.context.translate(gpx, gpy);
@@ -180,8 +184,9 @@ function runGame(timestamp) {
     canvas.context.translate(0, gpy);
     canvas.context.drawImage(gamePanel.canvas,0,0);
     canvas.context.restore();
-    drawForeground(canvas.context,true);
+    // Platform behind foreground clouds (same z-index as menu)
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     // Character drawn after foreground so it's always in front of parallax
     canvas.context.save();
     canvas.context.translate(gpx, gpy);
@@ -202,8 +207,10 @@ function runGame(timestamp) {
     canvas.context.globalAlpha = hookAlpha;
     canvas.context.drawImage(gamePanel.canvas,0,0);
     canvas.context.restore();
+    // Platform behind foreground clouds (same z-index as menu)
+    drawStartPlatform();
     drawForeground(canvas.context,true);
-    // Draw platform, character, logo (on top of everything)
+    // Character, logo, button outro (in front of clouds)
     updateStart();
     break;
 
@@ -214,8 +221,8 @@ function runGame(timestamp) {
     //draw
     drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
-    drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
     canvas.context.drawImage(gameOver.canvas,0,0);
     break;
@@ -231,8 +238,8 @@ function runGame(timestamp) {
     //draw
     drawBackgroundClouds(canvas.context,true);
     canvas.context.drawImage(gamePanel.canvas,0,0);
-    drawForeground(canvas.context,true);
     drawExitingPlatform(canvas.context);
+    drawForeground(canvas.context,true);
     drawGameOverlay(canvas.context,'fade-in');
     break;
 
@@ -269,6 +276,9 @@ function runGame(timestamp) {
   canvas.context.strokeStyle = '#fff';
   canvas.context.lineWidth = 4;
   canvas.context.strokeRect(cox, coy, camera.width, camera.height);
+
+  // Restore render scale
+  canvas.context.restore();
 }
 
 

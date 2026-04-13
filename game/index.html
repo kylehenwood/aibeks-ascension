@@ -361,6 +361,12 @@
       height: 100vh;
       object-fit: contain;
     }
+    /* Mobile: fill entire screen (gameplay is centered, edges are background) */
+    @media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+      .scaled-mode #js-starswinger {
+        object-fit: cover;
+      }
+    }
     @media (max-width: 1920px) {
       .scaled-mode #debug-panel,
       .scaled-mode .layout__sidebar,

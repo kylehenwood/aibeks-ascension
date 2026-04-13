@@ -205,11 +205,11 @@ var debugDefaults = {
   starsCanDie: true,
   grappleAssist: false,
   characterDebug: false,
-  galaxyBlur: 0,
+  galaxyBlur: 80,
   galaxyBorder: false,
-  fgGalaxyInClouds: false,
+  fgGalaxyInClouds: true,
   fgGalaxyUseBorder: false,
-  fgGalaxyBlur: 0,
+  fgGalaxyBlur: 120,
   fgGalaxyOpacity: 1
 };
 
@@ -899,11 +899,12 @@ function resizeCamera(w, h) {
   camera.width = w;
   camera.height = h;
 
-  // Canvas is always 2x camera for dev space
+  // Logical canvas is 2x camera for dev space
   canvas.width = w * 2;
   canvas.height = h * 2;
-  canvas.id.setAttribute('width', canvas.width);
-  canvas.id.setAttribute('height', canvas.height);
+  // Physical canvas is scaled up for crisp rendering
+  canvas.id.setAttribute('width', canvas.width * renderScale);
+  canvas.id.setAttribute('height', canvas.height * renderScale);
 
   camera.offsetX = (canvas.width - w) / 2;
   camera.offsetY = (canvas.height - h) / 2;

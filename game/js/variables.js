@@ -9,6 +9,8 @@ var dt = 1;
 var lastFrameTime = 0;
 var targetFrameMs = 1000 / 60; // 16.67ms per frame at 60fps
 
+var renderScale = 2; // Render at 2x resolution for crisp visuals
+
 var canvas = {
     id: '',
     context: '',

@@ -22,11 +22,7 @@ function setupMenuMouse() {
   var el = canvas.id;
 
   function toCanvas(e) {
-    var rect = el.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width) - camera.offsetX,
-      y: (e.clientY - rect.top) * (canvas.height / rect.height) - camera.offsetY
-    };
+    return screenToCamera(e.clientX, e.clientY);
   }
 
   function updateHover(pos) {

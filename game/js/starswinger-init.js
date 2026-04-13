@@ -67,15 +67,15 @@ function setupCanvas() {
     camera.width = Math.round(640 * aspect);
     camera.height = 640;
 
-    // Canvas is larger than camera to provide dev space around the game region
+    // Logical canvas is larger than camera for dev space
     canvas.width = camera.width * 2;
     canvas.height = camera.height * 2;
 
-    // set canvas width and height.
-    canvas.id.setAttribute('width', canvas.width);
-    canvas.id.setAttribute('height', canvas.height);
+    // Physical canvas is scaled up for crisp rendering
+    canvas.id.setAttribute('width', canvas.width * renderScale);
+    canvas.id.setAttribute('height', canvas.height * renderScale);
 
-    // Camera offset — centers the gameplay region within the larger canvas
+    // Camera offset — centers the gameplay region within the logical canvas
     camera.offsetX = (canvas.width - camera.width) / 2;
     camera.offsetY = (canvas.height - camera.height) / 2;
 }

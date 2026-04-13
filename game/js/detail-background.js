@@ -4,13 +4,13 @@
 var starLayers = [];
 var twinkleStars = [];
 var galaxyCanvas;
-var galaxyBlur = parseFloat(localStorage.getItem('ss_galaxyBlur')) || 0;
+var galaxyBlur = parseFloat(localStorage.getItem('ss_galaxyBlur')) || 80;
 var galaxyBorder = false;
-var fgGalaxyInClouds = false;
+var fgGalaxyInClouds = true;
 var fgGalaxyUseBorder = false;
 
 var fgGalaxyCanvas;
-var fgGalaxyBlur = parseFloat(localStorage.getItem('ss_fgGalaxyBlur')) || 0;
+var fgGalaxyBlur = parseFloat(localStorage.getItem('ss_fgGalaxyBlur')) || 120;
 var fgGalaxyOpacity = parseFloat(localStorage.getItem('ss_fgGalaxyOpacity'));
 if (isNaN(fgGalaxyOpacity)) fgGalaxyOpacity = 1;
 
