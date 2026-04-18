@@ -66,14 +66,27 @@ function updateGame() {
 
   // this is where I draw hooks to the game canvas.
 
+  // Update and draw shooting star hooks
+  updateShootingStarHooks();
+  drawShootingStarHooks(gameContext);
+
   // Update selected hook if it exists
   if (selectedHook != null) {
     drawHook(selectedHook);
   }
 
-  // draw each hook to this canvas (only visible ones for performance)
+  // Animate dying stars (keep supernova running after the player detaches)
+  for (var di = 0; di < starHooks.length; di++) {
+    if (starHooks[di].star.dying && starHooks[di] !== selectedHook) {
+      drawHook(starHooks[di]);
+    }
+  }
+
+  // draw each hook to this canvas (only visible ones for performance).
+  // Skip stars whose death animation has finished.
   for (var i = 0; i < starHooks.length; i++) {
     var hook = starHooks[i];
+    if (hook.star.alive === false) continue;
     if (hook.posX + hook.size >= viewLeft && hook.posX <= viewRight) {
       gameContext.drawImage(hook.layer, hook.posX, hook.posY);
     }

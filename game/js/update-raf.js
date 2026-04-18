@@ -160,6 +160,8 @@ function runGame(timestamp) {
     drawNextStarIndicator(canvas.context);
     // pause icon
     drawPauseIcon();
+    // star charge bar
+    drawStarChargeBar(canvas.context);
 
     // game over condition
     if (character.centerY-(character.size/2) > camera.height) {
@@ -262,6 +264,69 @@ function runGame(timestamp) {
     canvas.context.drawImage(pauseCanvas.canvas,0,0);
     // pause icon
     drawPauseIcon();
+    break;
+
+
+    case 'sandbox':
+    // Frame stepping logic
+    var sandboxShouldUpdate = true;
+    if (sandbox.paused && sandbox.frameStepQueued <= 0) {
+      sandboxShouldUpdate = false;
+    } else if (sandbox.paused && sandbox.frameStepQueued > 0) {
+      sandbox.frameStepQueued--;
+    }
+
+    if (sandboxShouldUpdate) {
+      updateGame_sandbox();
+      updateCamera();
+    }
+
+    // Always draw regardless of pause
+    drawBackgroundClouds(canvas.context, !sandbox.paused);
+    canvas.context.drawImage(gamePanel.canvas, 0, 0);
+    // User-painted clouds (drawn between game layer and foreground clouds)
+    drawSandboxClouds(canvas.context);
+    drawForeground(canvas.context, !sandbox.paused);
+    // Character drawn after foreground
+    var gpx = camera.x * parallax.gamePanel;
+    var gpy = camera.y * parallax.gamePanel;
+    canvas.context.save();
+    canvas.context.translate(gpx, gpy);
+    drawCharacter(canvas.context);
+    canvas.context.restore();
+
+    // Camera border overlay
+    if (sandbox.showCameraBorder) {
+      var inset = 2;
+      canvas.context.strokeStyle = 'rgba(255,255,255,0.35)';
+      canvas.context.lineWidth = 1.5;
+      canvas.context.setLineDash([6, 4]);
+      canvas.context.strokeRect(inset, inset, camera.width - inset * 2, camera.height - inset * 2);
+      canvas.context.setLineDash([]);
+      // Corner brackets
+      var br = 12;
+      canvas.context.strokeStyle = 'rgba(255,255,255,0.7)';
+      canvas.context.lineWidth = 2;
+      canvas.context.beginPath();
+      // Top-left
+      canvas.context.moveTo(inset, inset + br); canvas.context.lineTo(inset, inset); canvas.context.lineTo(inset + br, inset);
+      // Top-right
+      canvas.context.moveTo(camera.width - inset - br, inset); canvas.context.lineTo(camera.width - inset, inset); canvas.context.lineTo(camera.width - inset, inset + br);
+      // Bottom-right
+      canvas.context.moveTo(camera.width - inset, camera.height - inset - br); canvas.context.lineTo(camera.width - inset, camera.height - inset); canvas.context.lineTo(camera.width - inset - br, camera.height - inset);
+      // Bottom-left
+      canvas.context.moveTo(inset + br, camera.height - inset); canvas.context.lineTo(inset, camera.height - inset); canvas.context.lineTo(inset, camera.height - inset - br);
+      canvas.context.stroke();
+    }
+
+    // Paused overlay
+    if (sandbox.paused) {
+      canvas.context.fillStyle = 'rgba(0,0,0,0.15)';
+      canvas.context.fillRect(0, 0, camera.width, camera.height);
+      canvas.context.fillStyle = 'rgba(255,255,255,0.35)';
+      canvas.context.font = '14px monospace';
+      canvas.context.fillText('PAUSED \u2014 click Step to advance one frame', 10, 20);
+    }
     break;
 
   }

@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(start game/index.html)",
+      "Bash(start game/game.html)",
+      "Bash(start game/sandbox.html)",
+      "Bash(grep -n \"function updateInterface\" game/js/*.js)",
+      "Bash(grep -n \"var renderMode\\\\|renderMode =\" game/js/*.js)",
+      "Bash(sed -i 's/followBtn.addEventListener.*setCameraMode\\(true\\);  }\\);/followBtn.addEventListener\\('\\\\''click'\\\\'', function\\(\\) { setCameraMode\\(true\\);  sandboxAutoSave\\(\\); }\\);/' game/js/sandbox-ui.js)",
+      "Bash(sed -i 's/freeBtn.addEventListener.*setCameraMode\\(false\\); }\\);/freeBtn.addEventListener\\('\\\\''click'\\\\'', function\\(\\) { setCameraMode\\(false\\); sandboxAutoSave\\(\\); }\\);/' game/js/sandbox-ui.js)",
+      "Bash(grep -v \"function\\\\|//\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

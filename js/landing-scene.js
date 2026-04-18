@@ -425,6 +425,31 @@
     return (dx * dx + dy * dy) <= r * r;
   }
 
+  // Combined platform + character bounding box, used for cursor hover.
+  function hitTestPlatformArea(cx, cy) {
+    // Platform rect (with hover bob), extended upward to include the
+    // character standing on top.
+    var top    = platform.posY + platform.hover - character.size;
+    var bottom = platform.posY + platform.hover + platform.height;
+    var left   = platform.posX;
+    var right  = platform.posX + platform.width;
+    return cx >= left && cx <= right && cy >= top && cy <= bottom;
+  }
+
+  // Only show the pointer cursor when the user can actually click something.
+  canvasEl.addEventListener('mousemove', function (ev) {
+    // No interaction while autoplay is running or during the intro.
+    if (intro.active || gameState !== 'gameMenu') {
+      if (canvasEl.style.cursor !== '') canvasEl.style.cursor = '';
+      return;
+    }
+    var p = pageToCameraCoords(ev.clientX, ev.clientY);
+    canvasEl.style.cursor = hitTestPlatformArea(p.x, p.y) ? 'pointer' : '';
+  });
+  canvasEl.addEventListener('mouseleave', function () {
+    canvasEl.style.cursor = '';
+  });
+
   console.log('[landing] registering click handler, canvas=', canvasEl);
   canvasEl.addEventListener('click', function (ev) {
     var p = pageToCameraCoords(ev.clientX, ev.clientY);

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Aibek — Sandbox</title>
+  <link rel="stylesheet" type="text/css" href="scss/style.css" />
+  <style>
+    /* Shared button / panel base styles */
+    .debug-panel__btn {
+      flex: 1;
+      padding: 6px 8px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .debug-panel__btn:hover { background: rgba(255,255,255,0.1); }
+    .debug-panel__btn:active { background: rgba(255,255,255,0.2); }
+    .debug-panel__toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      cursor: pointer;
+    }
+    .debug-panel__toggle input { margin: 0; cursor: pointer; accent-color: #fff; }
+    .debug-panel__slider { margin-bottom: 10px; }
+    .debug-panel__slider-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 11px;
+    }
+    .debug-panel__slider-label span:last-child { color: #fff; font-weight: 600; }
+    .debug-panel__slider input[type="range"] { width: 100%; height: 16px; cursor: pointer; accent-color: #fff; }
+    .debug-panel__input {
+      flex: 1; min-width: 0; padding: 5px 6px;
+      background: #111; border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 4px; color: #fff; font-family: monospace; font-size: 11px;
+    }
+    .debug-panel__input::placeholder { color: rgba(255,255,255,0.3); }
+    .debug-panel__input:focus { border-color: #fff; outline: none; }
+
+    /* Fullscreen button */
+    .fullscreen-btn {
+      position: fixed; bottom: 12px; right: 12px;
+      width: 44px; height: 44px;
+      background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; color: #fff; font-size: 20px; cursor: pointer;
+      z-index: 10000; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .fullscreen-btn:hover { background: rgba(0,0,0,0.9); }
+
+    /* Scaled mode */
+    .scaled-mode { padding: 0 !important; }
+    .scaled-mode .layout__container {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      transform: none; z-index: 9998;
+      display: flex; align-items: center; justify-content: center; background: #000;
+    }
+    .scaled-mode .viewport {
+      border: none;
+      box-shadow: none;
+    }
+    .scaled-mode .js-viewport {
+      width: 100vw !important; height: 100vh !important;
+      margin: 0; box-shadow: none; overflow: hidden;
+    }
+    .scaled-mode #js-starswinger {
+      display: block;
+    }
+
+    /* Tab navigation */
+    .tab-nav {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      z-index: 10002; display: flex; align-items: center; gap: 2px; padding: 8px;
+      background: var(--hud-bg, rgba(20,20,26,0.98));
+      border: 1px solid var(--hud-border, rgba(255,255,255,0.1));
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      box-shadow: none;
+      backdrop-filter: blur(20px);
+      font-family: var(--hud-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      user-select: none;
+    }
+    .tab-nav__tab {
+      display: flex; align-items: center; justify-content: center;
+      padding: 6px 16px; background: transparent; border: none; border-radius: 5px;
+      color: var(--btn-color, rgba(255,255,255,0.55));
+      font-size: var(--btn-font-size, 11px); font-weight: var(--btn-font-weight, 600);
+      letter-spacing: 0.3px; text-decoration: none; cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+    .tab-nav__tab:hover { color: var(--btn-color-hover, #fff); background: var(--btn-bg-hover, rgba(255,255,255,0.1)); }
+    .tab-nav__tab--active { color: #fff; background: var(--btn-bg-active, rgba(255,255,255,0.18)); cursor: default; }
+
+    /* Sandbox level editor sidebar */
+    .sandbox-panel {
+      position: fixed; top: 12px; left: 12px; width: 280px;
+      max-height: calc(100vh - 24px);
+      background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px; color: #ccc;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      font-size: 12px; display: flex; flex-direction: column;
+      user-select: none; z-index: 10001; backdrop-filter: blur(6px); overflow: hidden;
+    }
+    .sandbox-panel__header {
+      padding: 14px 16px; font-weight: bold; font-size: 14px;
+      letter-spacing: 0.5px; color: #fff;
+      background: rgba(0,0,0,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px 6px 0 0; flex-shrink: 0;
+    }
+    .sandbox-panel__body {
+      padding: 8px 16px 16px; overflow-y: auto; flex: 1;
+    }
+    .sandbox-panel__body::-webkit-scrollbar { width: 4px; }
+    .sandbox-panel__body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .sandbox-panel__row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .sandbox-panel__info {
+      margin-top: 10px; font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.5;
+    }
+    .sandbox-panel__divider { height: 1px; background: rgba(255,255,255,0.12); margin: 12px 0; }
+    .sandbox-panel__label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.4); font-weight: 600; margin-bottom: 6px; margin-top: 10px;
+    }
+    .sandbox-panel__stat { display: flex; justify-content: space-between; padding: 3px 0; font-size: 11px; }
+    .sandbox-panel__stat span:last-child { color: #fff; font-weight: 500; }
+
+    /* ── Shared HUD design tokens ───────────────────────────────────────────────
+       All sandbox pill menus and the sidebar use these values so they look
+       like a coherent family. Matches the dark, clean app-menu aesthetic.    */
+    :root {
+      --hud-bg:         rgba(20,20,26,0.98);
+      --hud-border:     rgba(255,255,255,0.1);
+      --hud-radius:     10px;
+      --hud-shadow:     0 4px 20px rgba(0,0,0,0.7);
+      --hud-font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --btn-pad-v:      9px;
+      --btn-pad-h:      16px;
+      --btn-color:      rgba(255,255,255,0.55);
+      --btn-color-hover:#fff;
+      --btn-bg-hover:   rgba(255,255,255,0.1);
+      --btn-bg-active:  rgba(255,255,255,0.18);
+      --btn-font-size:  11px;
+      --btn-font-weight:600;
+      --divider-color:  rgba(255,255,255,0.1);
+    }
+
+    /* HUD bar — centers the three pills in a row at the bottom */
+    .sandbox-hud {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10003;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      pointer-events: none;
+    }
+    .sandbox-hud > * { flex-shrink: 0; pointer-events: auto; }
+
+    /* Shared pill container */
+    .hud-pill {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      background: var(--hud-bg);
+      border: 1px solid var(--hud-border);
+      border-radius: var(--hud-radius);
+      box-shadow: var(--hud-shadow);
+      font-family: var(--hud-font);
+      font-size: var(--btn-font-size);
+      user-select: none;
+      backdrop-filter: blur(20px);
+    }
+
+    /* Extra padding variant — toolbar and mode toggle */
+    .hud-pill--padded {
+      padding: 8px;
+      border-radius: 12px;
+    }
+
+    /* Shared button style */
+    .toolbar-tool,
+    .mode-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 64px;
+      padding: 6px 0;
+      background: transparent;
+      border: none;
+      border-radius: 5px;
+      color: var(--btn-color);
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.1s, color 0.1s;
+      flex-shrink: 0;
+    }
+    .toolbar-tool:hover,
+    .mode-btn:hover {
+      background: var(--btn-bg-hover);
+      color: var(--btn-color-hover);
+    }
+
+    /* Active / selected states */
+    .toolbar-tool--active,
+    .mode-btn--active {
+      background: var(--btn-bg-active);
+      color: #fff;
+    }
+    .mode-btn--play.mode-btn--active {
+      background: rgba(60,220,110,0.18);
+      color: rgb(90,220,130);
+    }
+
+    .toolbar-tool__icon,
+    .mode-btn__icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+    .toolbar-tool__label,
+    .mode-btn__label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    /* Vertical dividers between button groups */
+    .toolbar-divider,
+    .mode-btn__divider {
+      width: 1px;
+      height: 16px;
+      align-self: center;
+      background: var(--divider-color);
+      flex-shrink: 0;
+      margin: 0 3px;
+    }
+
+    /* Sidebar panel — same family as the pills */
+    .sandbox-panel {
+      border-color: var(--hud-border) !important;
+      background: var(--hud-bg) !important;
+    }
+    .sandbox-panel__header {
+      background: var(--hud-bg) !important;
+      border-bottom-color: var(--hud-border) !important;
+      font-size: 12px !important;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 12px 14px !important;
+    }
+    .debug-panel__btn {
+      font-size: var(--btn-font-size) !important;
+      font-weight: var(--btn-font-weight) !important;
+      text-transform: none !important;
+    }
+    .sandbox-panel__label {
+      font-size: 11px;
+      font-weight: 600;
+    }
+    /* Tool toolbar disabled state (Play mode) */
+    .toolbar--disabled .toolbar-tool {
+      opacity: 0.3;
+      pointer-events: none;
+      cursor: default;
+    }
+    /* Cloud layer popover */
+    #cloud-popover {
+      position: fixed;
+      z-index: 10010;
+    }
+  </style>
+</head>
+
+<body class="layout layout--sidebar">
+
+<button id="fullscreen-btn" class="fullscreen-btn" title="Toggle fullscreen">&#x26F6;</button>
+
+<div class="layout__container">
+  <div class="js-viewport">
+    <div class="level-layout">
+      <canvas id="js-starswinger"></canvas>
+      <div class="level-layout__background"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Shared engine -->
+<script type="text/javascript" src="js/base-functions.js"></script>
+<script type="text/javascript" src="js/variables.js"></script>
+<script type="text/javascript" src="js/canvas-setup.js"></script>
+<script type="text/javascript" src="js/physics.js"></script>
+<script type="text/javascript" src="js/chunk-manager.js"></script>
+
+<script type="text/javascript" src="js/start-game.js"></script>
+<script type="text/javascript" src="js/game-ui.js"></script>
+<script type="text/javascript" src="js/game-setup.js"></script>
+<script type="text/javascript" src="js/game-controls.js"></script>
+
+<script type="text/javascript" src="js/hookDetach.js"></script>
+<script type="text/javascript" src="js/repositionSwing.js"></script>
+
+<script type="text/javascript" src="js/hookCreate.js"></script>
+<script type="text/javascript" src="js/hookDraw.js"></script>
+<script type="text/javascript" src="js/hookChange.js"></script>
+<script type="text/javascript" src="js/hookGrappel.js"></script>
+
+<script type="text/javascript" src="js/game-movement.js"></script>
+<script type="text/javascript" src="js/autoplay.js"></script>
+
+<script type="text/javascript" src="js/game-pause.js"></script>
+<script type="text/javascript" src="js/game-pause-elements.js"></script>
+
+<script type="text/javascript" src="js/game-over.js"></script>
+<script type="text/javascript" src="js/game-over-elements.js"></script>
+
+<script type="text/javascript" src="js/screen-menu.js"></script>
+<script type="text/javascript" src="js/screen-menu-elements.js"></script>
+
+<script type="text/javascript" src="js/screen-loading.js"></script>
+<script type="text/javascript" src="js/detail-background.js"></script>
+<script type="text/javascript" src="js/detail-foreground.js"></script>
+
+<script type="text/javascript" src="js/animation-tomenu.js"></script>
+<script type="text/javascript" src="js/animation-toplay.js"></script>
+<script type="text/javascript" src="js/animation-restart.js"></script>
+<script type="text/javascript" src="js/animation-intro.js"></script>
+<script type="text/javascript" src="js/animation-gameover.js"></script>
+<script type="text/javascript" src="js/animation-functions.js"></script>
+
+<script type="text/javascript" src="js/update-raf.js"></script>
+<script type="text/javascript" src="js/update-game.js"></script>
+<script type="text/javascript" src="js/update-character.js"></script>
+
+<script type="text/javascript" src="js/sound-effects.js"></script>
+
+<script type="text/javascript" src="js/clearVariables.js"></script>
+<script type="text/javascript" src="js/game-overlay.js"></script>
+
+<script type="text/javascript" src="js/moon-powerbar.js"></script>
+
+<script type="text/javascript" src="js/collision.js"></script>
+<script type="text/javascript" src="js/game-resize.js"></script>
+<script type="text/javascript" src="js/debug-panel.js"></script>
+<script type="text/javascript" src="js/tab-navigation.js"></script>
+<script type="text/javascript" src="js/shooting-star.js"></script>
+
+<!-- Sandbox -->
+<script type="text/javascript" src="js/sandbox.js"></script>
+<script type="text/javascript" src="js/sandbox-ui.js"></script>
+<script type="text/javascript" src="js/sandbox-init.js"></script>
+
+<script>
+(function() {
+  var btn = document.getElementById('fullscreen-btn');
+
+  btn.addEventListener('click', function() {
+    if (!document.fullscreenElement) {
+      var el = document.documentElement;
+      var rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (rfs) rfs.call(el);
+    } else {
+      var efs = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (efs) efs.call(document);
+    }
+  });
+
+  document.addEventListener('fullscreenchange', function() {
+    btn.innerHTML = document.fullscreenElement ? '&#x2716;' : '&#x26F6;';
+  });
+})();
+</script>
+
+</body>
+</html>
