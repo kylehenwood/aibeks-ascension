@@ -42,6 +42,9 @@ function mouseTestSetup() {
       case "gameMenu":
         menuClick(mouseX,mouseY);
         break;
+      case "sandbox":
+        sandboxClick(mouseX,mouseY);
+        break;
       default: return;
     }
     //console.log(gameState);
@@ -88,7 +91,17 @@ function playClick(mouseX,mouseY) {
     }
 
     if (clickedSomething === false) {
-      detach();
+      if (starCharge.charged && character.swinging) {
+        // Create a new immune star at the click position and grapple to it
+        var worldX = mouseX - camera.x * parallax.gamePanel;
+        var worldY = mouseY - camera.y * parallax.gamePanel;
+        var newIndex = createStarAtWorld(worldX, worldY, true);
+        starCharge.power = 0;
+        starCharge.charged = false;
+        changeHook(newIndex);
+      } else {
+        detach();
+      }
     }
   }
 }
@@ -204,6 +217,10 @@ function controls() {
             }, 120);
           } else if (gameState === "gameOver") {
             backToMenu();
+          } else if (gameState === "sandbox") {
+            if (character.swinging) {
+              detach();
+            }
           } else if (gameState === "playGame") {
             if (character.swinging) {
               detach();

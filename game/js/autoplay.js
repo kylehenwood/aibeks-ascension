@@ -3,13 +3,15 @@
 // then auto-attaches to the next visible star.
 
 var autoplay = {
-  enabled: false,
-  mode: 'release',       // 'release' = detach & fly, 'chain' = grapple at end of swing
-  accuracy: 90,          // 80-100, how close to optimal release angle (%)
-  waiting: false,        // true while falling and looking for next star
-  detachAngle: null,     // the randomised target angle for this swing
-  hasDetached: false,    // prevent re-detach on same swing
-  prevVx: 0              // previous frame vx for detecting swing peak (chain mode)
+  enabled: localStorage.getItem('ss_autoplayEnabled') === 'true',
+  mode: localStorage.getItem('ss_autoplayMode') || 'release',
+  accuracy: parseInt(localStorage.getItem('ss_autoplayAccuracy')) || 90,
+  waiting: false,
+  detachAngle: null,
+  hasDetached: false,
+  prevVx: 0,
+  prevVy: 0,
+  lastHook: null
 };
 
 
@@ -48,27 +50,35 @@ function createAutoplayPanel() {
 
   // Wire controls
   var toggle = document.getElementById('autoplay-toggle');
+  toggle.checked = autoplay.enabled;
   toggle.addEventListener('change', function() {
     autoplay.enabled = this.checked;
     autoplay.waiting = false;
     autoplay.detachAngle = null;
     autoplay.hasDetached = false;
+    localStorage.setItem('ss_autoplayEnabled', this.checked);
     // Force grapple assist on when autoplay is active
     if (this.checked) debugGrappleAssist = true;
   });
 
   var modeSelect = document.getElementById('autoplay-mode');
   var modeVal = document.getElementById('autoplay-mode-val');
+  modeSelect.value = autoplay.mode;
+  modeVal.textContent = autoplay.mode === 'chain' ? 'Chain' : 'Release';
   modeSelect.addEventListener('change', function() {
     autoplay.mode = this.value;
     modeVal.textContent = this.value === 'chain' ? 'Chain' : 'Release';
+    localStorage.setItem('ss_autoplayMode', this.value);
   });
 
   var slider = document.getElementById('autoplay-accuracy');
   var sliderVal = document.getElementById('autoplay-accuracy-val');
+  slider.value = autoplay.accuracy;
+  sliderVal.textContent = autoplay.accuracy + '%';
   slider.addEventListener('input', function() {
     autoplay.accuracy = parseInt(this.value);
     sliderVal.textContent = this.value + '%';
+    localStorage.setItem('ss_autoplayAccuracy', this.value);
   });
 }
 
@@ -92,39 +102,29 @@ function updateAutoplay() {
   }
 
   autoplay.prevVx = physics.vx;
+  autoplay.prevVy = physics.vy;
 }
 
 
-// While swinging: detach at (or near) the optimal release angle
+// Release mode: detach exactly at the optimal release angle (cyan dot)
 function autoplayDetach() {
   if (!physics.ropeActive || !selectedHook) return;
+  if (autoplay.hasDetached) return;
 
   // Need grapple assist data — bestAngle stored by drawGrappleAssist
   var bestAngle = physics._assistBestAngle;
   if (bestAngle === null || bestAngle === undefined) return;
 
-  var rope = physics.rope;
-  var last = rope[rope.length - 1];
-  var hook = rope[0];
-
-  var curAngle = Math.atan2(last.y - hook.y, last.x - hook.x);
-
-  // Pick a randomised target angle once per swing
-  if (autoplay.detachAngle === null) {
-    // Accuracy 100% = exactly at bestAngle, 80% = up to 20% of PI offset
-    var maxOffset = (1 - autoplay.accuracy / 100) * Math.PI;
-    var offset = (Math.random() * 2 - 1) * maxOffset;
-    autoplay.detachAngle = bestAngle + offset;
-    autoplay.hasDetached = false;
-  }
-
-  if (autoplay.hasDetached) return;
-
   // Only detach on forward swings (vx > 0)
   if (physics.vx <= 0) return;
 
-  // Check if character has reached (or passed) the target angle
-  var angleDiff = curAngle - autoplay.detachAngle;
+  var rope = physics.rope;
+  var last = rope[rope.length - 1];
+  var hook = rope[0];
+  var curAngle = Math.atan2(last.y - hook.y, last.x - hook.x);
+
+  // Check if character has reached (or passed) the best angle
+  var angleDiff = curAngle - bestAngle;
   if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
   if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
 
@@ -135,22 +135,21 @@ function autoplayDetach() {
   var swingDir = omega >= 0 ? 1 : -1;
 
   if (angleDiff * swingDir >= 0) {
-    // Passed the target — release
+    autoplay.lastHook = selectedHook;
     detach();
     autoplay.hasDetached = true;
-    autoplay.detachAngle = null;
     autoplay.waiting = true;
   }
 }
 
 
-// Chain mode: grapple to the next star at the peak of the forward swing
+// Chain mode: grapple to the next star at the apex (highest point) of the swing
 function autoplayChain() {
   if (!physics.ropeActive || !selectedHook) return;
   if (autoplay.hasDetached) return;
 
-  // Detect forward swing peak: vx was positive and is now dropping toward zero
-  if (autoplay.prevVx > 0.5 && physics.vx <= 0.5) {
+  // Detect apex: vy crosses from negative (rising) to positive (falling)
+  if (autoplay.prevVy < 0 && physics.vy >= 0) {
     // Find the furthest visible alive star ahead
     var best = null;
     var bestDist = -1;
@@ -159,6 +158,7 @@ function autoplayChain() {
       var hook = starHooks[i];
       if (!hook.star.alive) continue;
       if (hook === selectedHook) continue;
+      if (hook === autoplay.lastHook) continue;
 
       var screenX = hook.centerX + camera.x * parallax.gamePanel;
       if (screenX < -hook.size || screenX > camera.width + hook.size) continue;
@@ -166,7 +166,7 @@ function autoplayChain() {
       if (screenY < -hook.size || screenY > camera.height + hook.size) continue;
 
       var dx = hook.centerX - character.centerX;
-      if (dx < -100) continue;
+      if (dx < 0) continue;
 
       var dy = hook.centerY - character.centerY;
       var dist = dx * dx + dy * dy;
@@ -178,6 +178,7 @@ function autoplayChain() {
     }
 
     if (best) {
+      autoplay.lastHook = selectedHook;
       changeHook(best.star.index);
       autoplay.hasDetached = true;
       // Reset on next swing via prevVx cycle
@@ -200,6 +201,7 @@ function autoplayAttach() {
   for (var i = 0; i < starHooks.length; i++) {
     var hook = starHooks[i];
     if (!hook.star.alive) continue;
+    if (hook === autoplay.lastHook) continue;
 
     // Must be within camera viewport
     var screenX = hook.centerX + camera.x * parallax.gamePanel;
@@ -209,7 +211,7 @@ function autoplayAttach() {
 
     // Only consider stars ahead of the character
     var dx = hook.centerX - character.centerX;
-    if (dx < -100) continue;
+    if (dx < 0) continue;
 
     var dy = hook.centerY - character.centerY;
     var dist = dx * dx + dy * dy;
@@ -218,26 +220,6 @@ function autoplayAttach() {
     if (dist > bestDist) {
       bestDist = dist;
       best = hook;
-    }
-  }
-
-  // Fallback: try any visible alive star (furthest first, including behind)
-  if (!best) {
-    bestDist = -1;
-    for (var i = 0; i < starHooks.length; i++) {
-      var hook = starHooks[i];
-      if (!hook.star.alive) continue;
-      var screenX = hook.centerX + camera.x * parallax.gamePanel;
-      if (screenX < -hook.size || screenX > camera.width + hook.size) continue;
-      var screenY = hook.centerY;
-      if (screenY < -hook.size || screenY > camera.height + hook.size) continue;
-      var dx = hook.centerX - character.centerX;
-      var dy = hook.centerY - character.centerY;
-      var dist = dx * dx + dy * dy;
-      if (dist > bestDist) {
-        bestDist = dist;
-        best = hook;
-      }
     }
   }
 

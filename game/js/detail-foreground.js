@@ -207,7 +207,8 @@ function setupForeground() {
 function drawBackgroundClouds(context, isAnimating) {
   var y1 = camera.y * parallax.cloud1;
   var x1 = camera.vx * dt * parallax.cloud1;
-  if (isAnimating === true) x1 -= 0.1 * dt;
+  var cloudDriftScale = (gameState === 'sandbox') ? 0.15 : 1;
+  if (isAnimating === true) x1 -= 0.1 * dt * cloudDriftScale;
 
   var backgroundCloudY = (camera.height - 160) + y1;
   context.drawImage(backgroundClouds[0].canvas, 0, backgroundCloudY);
@@ -225,9 +226,10 @@ function drawForeground(context, isAnimating) {
   var x3 = camera.vx * dt * parallax.cloud3;
 
   // always drift horizontally
+  var fgDriftScale = (gameState === 'sandbox') ? 0.15 : 1;
   if (isAnimating === true) {
-    x2 -= 0.2*dt;
-    x3 -= 0.3*dt;
+    x2 -= 0.2 * dt * fgDriftScale;
+    x3 -= 0.3 * dt * fgDriftScale;
   }
 
   // Background cloud Y (drawn separately via drawBackgroundClouds before platform)

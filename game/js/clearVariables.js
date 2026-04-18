@@ -24,6 +24,10 @@ function clearVariables() {
 
   starImmunity.power = 0;
 
+  // Reset star charge
+  starCharge.power = 0;
+  starCharge.charged = false;
+
   gameUserInterface.score = 0;
   gameMode = null;
   hookAlpha = 0;

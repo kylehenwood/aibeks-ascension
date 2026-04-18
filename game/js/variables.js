@@ -88,6 +88,14 @@ var starImmunity = {
     immune: false
 }
 
+// Star charge — fills while swinging, creates a new immune star when full
+var starCharge = {
+  power: 0,        // 0 to maxPower
+  maxPower: 100,   // frames of swinging to fully charge
+  charged: false,   // true when power >= maxPower
+  rate: 1           // charge per frame while swinging
+}
+
 
 
 // Parallax depth config — 0 = fixed/infinitely far, 1 = moves with camera, >1 = foreground

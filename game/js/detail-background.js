@@ -14,6 +14,120 @@ var fgGalaxyBlur = parseFloat(localStorage.getItem('ss_fgGalaxyBlur')) || 120;
 var fgGalaxyOpacity = parseFloat(localStorage.getItem('ss_fgGalaxyOpacity'));
 if (isNaN(fgGalaxyOpacity)) fgGalaxyOpacity = 1;
 
+// ─── Shooting Stars ───────────────────────────────────────────────────────────
+
+var shootingStars = [];
+var shootingStarTimer = 0;
+var shootingStarInterval = 300; // frames between spawn attempts (~5s at 60fps)
+var shootingStarChance = 0.4;  // probability per interval
+var bgShootingStarsEnabled = localStorage.getItem('ss_bgShootingStars') !== 'false'; // on by default
+
+function spawnShootingStar() {
+  // Start from a random position along the top or left edge
+  var startX, startY;
+  if (Math.random() < 0.6) {
+    // Top edge — random X in first 60%
+    startX = Math.random() * camera.width * 0.6;
+    startY = -10;
+  } else {
+    // Left edge — random Y in first 40%
+    startX = -10;
+    startY = Math.random() * camera.height * 0.4;
+  }
+
+  // Travel direction: roughly top-left to bottom-right with some variance
+  var angle = 0.6 + Math.random() * 0.4; // ~34° to ~57° from horizontal
+  var speed = 4 + Math.random() * 4;     // 4-8 px/frame
+  var vx = Math.cos(angle) * speed;
+  var vy = Math.sin(angle) * speed;
+
+  // Life = time to cross the diagonal of the camera
+  var diagonal = Math.sqrt(camera.width * camera.width + camera.height * camera.height);
+  var life = diagonal / speed;
+
+  shootingStars.push({
+    x: startX,
+    y: startY,
+    vx: vx,
+    vy: vy,
+    life: life,
+    maxLife: life,
+    size: 2.5 + Math.random() * 1.5, // 2.5-4px radius
+    trail: []
+  });
+}
+
+function updateShootingStars(ctx) {
+  if (!bgShootingStarsEnabled) return;
+
+  // Spawn timer
+  shootingStarTimer += dt;
+  if (shootingStarTimer >= shootingStarInterval) {
+    shootingStarTimer = 0;
+    if (Math.random() < shootingStarChance) {
+      spawnShootingStar();
+    }
+  }
+
+  for (var i = shootingStars.length - 1; i >= 0; i--) {
+    var s = shootingStars[i];
+    s.life -= dt;
+    if (s.life <= 0) {
+      shootingStars.splice(i, 1);
+      continue;
+    }
+
+    // Move
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+
+    var t = s.life / s.maxLife; // 1 → 0 as it completes
+
+    // Add trail particle
+    s.trail.push({
+      x: s.x,
+      y: s.y,
+      life: 20, // frames
+      maxLife: 20,
+      size: s.size * t * 0.6
+    });
+
+    // Cap trail length
+    if (s.trail.length > 30) s.trail.shift();
+
+    // Draw trail particles
+    for (var j = s.trail.length - 1; j >= 0; j--) {
+      var p = s.trail[j];
+      p.life -= dt;
+      if (p.life <= 0) {
+        s.trail.splice(j, 1);
+        continue;
+      }
+      var pt = p.life / p.maxLife;
+      var alpha = pt * pt * 0.5;
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * pt, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Draw the head — shrinks as life decreases
+    var headSize = s.size * t;
+    var headAlpha = Math.min(t * 2, 1); // fade in quickly, fade out at end
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + headAlpha + ')';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, headSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bright core
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + (headAlpha * 0.8) + ')';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, headSize * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+
 function setupBackground() {
   createGalaxyLayer();
   createForegroundGalaxy();
@@ -31,6 +145,7 @@ function drawBackground() {
 
   drawGalaxyLayer();
   drawBackgroundStars();
+  updateShootingStars(ctx);
 }
 
 // Stored blob positions so we can regenerate with different blur
