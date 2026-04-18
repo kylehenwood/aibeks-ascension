@@ -612,9 +612,11 @@
   var bgCloudOffset = 0;
 
   // Fall-back-to-platform state: when autoplay fails (character falls off
-  // the bottom of the canvas), we respawn them above the canvas over the
-  // platform and let gravity land them back on it before returning to idle.
+  // the bottom of the canvas), we wait 2s (character gone offscreen) then
+  // respawn them above the canvas over the platform and let gravity land
+  // them back on it before returning to idle.
   var fallingBackToMenu = false;
+  var fallBackPending   = false; // true while 2s respawn timer is counting down
 
   // Direction of the current run: +1 jumps right (stars +1, +2, +3 …),
   // -1 jumps left (stars -1, -2, -3 …). Platform is index "0" — we place
@@ -665,9 +667,15 @@
       halfCanvas * 1.18
     ];
 
+    // Bias initial stars toward the lower half of the grid so the first
+    // grapples read naturally from the platform's height. We pick a starting
+    // row in [MIN_ROW, rows-1] and still iterate the full range as a fallback
+    // in case lower rows overlap.
+    var MIN_ROW = Math.floor(rows / 2); // rows 5..9 for rows=10
+
     for (var i = 0; i < offsets.length; i++) {
       var worldX = gridBaseX + offsets[i];
-      var rowStart = Math.floor(rng() * rows);
+      var rowStart = MIN_ROW + Math.floor(rng() * (rows - MIN_ROW));
       for (var attempt = 0; attempt < rows; attempt++) {
         var row = (rowStart + attempt) % rows;
         var worldY = row * sq + 120 + 32;
@@ -1142,11 +1150,13 @@
   // ── Star fade-out on game-over / fall ────────────────────────────────────
   // When the run ends (either the engine's own game-over trigger or our
   // belowCanvas watchdog), we don't want the stars to simply blink off.
-  // beginHookFadeOut queues a reset callback and starts ramping hookAlpha
-  // down; the runGame wrapper advances the fade each frame and fires the
-  // callback once hookAlpha hits 0.
-  var fadingOutHooks = false;
+  // beginHookFadeOut ramps hookAlpha down in the RAF wrapper while a fixed
+  // 2s wall-clock timer holds, then fires the queued reset callback — so
+  // the respawn always lands at exactly 2s after the fall, regardless of
+  // the fade's starting alpha or frame-rate.
+  var fadingOutHooks  = false;
   var fadeOutCallback = null;
+  var FALL_DELAY_MS   = 2000;
 
   function beginHookFadeOut(onDone) {
     if (fadingOutHooks) return; // already fading; ignore repeat triggers
@@ -1155,6 +1165,13 @@
     autoplay.enabled = false;
     autoplay.waiting = false;
     if (character.swinging) detach();
+    setTimeout(function () {
+      if (!fadingOutHooks) return;
+      fadingOutHooks = false;
+      var cb = fadeOutCallback;
+      fadeOutCallback = null;
+      if (cb) cb();
+    }, FALL_DELAY_MS);
   }
 
   // Put the character above the camera at the platform's X, reset all
@@ -1198,6 +1215,39 @@
     offscreenTimer    = 0;
   }
 
+  // ── Idle autoplay ────────────────────────────────────────────────────────
+  // While the character sits idle on the platform, auto-trigger the same
+  // sequence a click would after a random delay in [5s, 10s]. Any run
+  // (user-click or auto) resets the timer.
+  var idleTime         = 0;   // frames accumulated while idle on platform
+  var idleTriggerAt    = -1;  // frames-from-now threshold; -1 = unscheduled
+  var IDLE_DELAY_MIN    = 60 * 5;  // 5s
+  var IDLE_DELAY_SPREAD = 60 * 5;  // + 0–5s random → [5s, 10s]
+
+  function tickIdleAutoplay() {
+    // Only count idle time when we're genuinely parked on the platform.
+    if (intro.active ||
+        gameState !== 'gameMenu' ||
+        fallingBackToMenu ||
+        fadingOutHooks) {
+      idleTime = 0;
+      idleTriggerAt = -1;
+      return;
+    }
+
+    idleTime += dt;
+
+    if (idleTriggerAt < 0) {
+      idleTriggerAt = IDLE_DELAY_MIN + Math.random() * IDLE_DELAY_SPREAD;
+    }
+
+    if (idleTime >= idleTriggerAt) {
+      idleTime = 0;
+      idleTriggerAt = -1;
+      startClickAutoplay();
+    }
+  }
+
   // ── Runtime patching: wrap runGame for per-frame hooks ───────────────────
   // Applies scroll parallax while on the menu, and runs the game-over
   // watchdog. runGame schedules its own RAF, so we just replace the global.
@@ -1220,6 +1270,7 @@
       origRunGame(timestamp);
       // dt is fresh now (origRunGame calculated it); watchdog can use it.
       tickGameOverWatchdog();
+      tickIdleAutoplay();
 
       // Fade in the stars once the character jumps (starting state 3), and
       // keep filling in during the first frames of real gameplay. The
@@ -1229,16 +1280,12 @@
         hookAlpha = Math.min(1, hookAlpha + HOOK_FADE_RATE * dt);
       }
 
-      // Fade-out: driven by beginHookFadeOut(). Ramps hookAlpha down, then
-      // fires the queued reset callback on completion.
-      if (fadingOutHooks) {
+      // Fade-out: driven by beginHookFadeOut(). Ramps hookAlpha down
+      // visually. The respawn callback is fired on a fixed 2s setTimeout
+      // inside beginHookFadeOut, independent of this frame-rate-sensitive
+      // fade — so the fall→respawn cadence stays consistent.
+      if (fadingOutHooks && hookAlpha > 0) {
         hookAlpha = Math.max(0, hookAlpha - HOOK_FADE_RATE * dt);
-        if (hookAlpha <= 0) {
-          var cb = fadeOutCallback;
-          fadingOutHooks = false;
-          fadeOutCallback = null;
-          if (typeof cb === 'function') cb();
-        }
       }
       // One-shot log each time we change gameState, plus every ~60 frames
       // while in playGame so we can see camera drift if any.
