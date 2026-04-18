@@ -125,6 +125,67 @@
       background: rgba(255, 255, 255, 0.24);
     }
 
+    /* Banner settings toggle — top-right pill */
+    .banner-toggle {
+      position: absolute;
+      top: 24px;
+      right: 20px;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px 8px 10px;
+      background: rgba(20, 20, 26, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.6px;
+      color: rgba(255, 255, 255, 0.75);
+      text-transform: uppercase;
+      cursor: pointer;
+      user-select: none;
+    }
+    .banner-toggle input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .banner-toggle__track {
+      position: relative;
+      display: inline-block;
+      width: 28px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      transition: background 0.15s ease;
+      flex-shrink: 0;
+    }
+    .banner-toggle__thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s ease;
+    }
+    .banner-toggle input:checked + .banner-toggle__track {
+      background: #40e0ff;
+    }
+    .banner-toggle input:checked + .banner-toggle__track .banner-toggle__thumb {
+      transform: translateX(12px);
+    }
+    .banner-toggle:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
     /* ─────────── About section ─────────── */
     .about {
       position: relative;
@@ -407,6 +468,12 @@
       <canvas id="js-starswinger" class="banner__canvas"></canvas>
       <div class="banner__fade"></div>
 
+      <label class="banner-toggle" title="Play the intro animation on load">
+        <input type="checkbox" id="intro-toggle-input" checked>
+        <span class="banner-toggle__track"><span class="banner-toggle__thumb"></span></span>
+        <span>Intro</span>
+      </label>
+
       <nav class="nav" aria-label="Primary">
         <a class="nav__brand" href="/" aria-label="Aibek — Home">
           <svg viewBox="0 0 372 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -601,18 +668,52 @@
     </section>
   </div>
 
-  <!-- ───── Game engine — loaded directly (no iframe), only the modules
-        the atmospheric menu scene actually needs. starswinger-init.js
-        (which auto-boots the full game) is intentionally excluded. ───── -->
+  <!-- ───── Game engine — full load so the landing page can run the real
+        gameplay (autoplay-driven) when the character is clicked.
+        Skipped: starswinger-init.js (auto-boots), debug-panel.js, tab-
+        navigation.js, game-controls.js (steals keyboard), sandbox*.js.
+        Order mirrors game/index.html so cross-file dependencies resolve. ───── -->
   <script src="game/js/base-functions.js"></script>
   <script src="game/js/variables.js"></script>
-  <script src="game/js/update-raf.js"></script>
   <script src="game/js/canvas-setup.js"></script>
-  <script src="game/js/update-character.js"></script>
+  <script src="game/js/physics.js"></script>
+  <script src="game/js/chunk-manager.js"></script>
+  <script src="game/js/start-game.js"></script>
+  <script src="game/js/game-ui.js"></script>
+  <script src="game/js/game-setup.js"></script>
+  <script src="game/js/hookDetach.js"></script>
+  <script src="game/js/repositionSwing.js"></script>
+  <script src="game/js/hookCreate.js"></script>
+  <script src="game/js/hookDraw.js"></script>
+  <script src="game/js/hookChange.js"></script>
+  <script src="game/js/hookGrappel.js"></script>
+  <script src="game/js/game-movement.js"></script>
+  <script src="game/js/autoplay.js"></script>
+  <script src="game/js/game-pause.js"></script>
+  <script src="game/js/game-pause-elements.js"></script>
+  <script src="game/js/game-over.js"></script>
+  <script src="game/js/game-over-elements.js"></script>
+  <script src="game/js/screen-menu.js"></script>
+  <script src="game/js/screen-menu-elements.js"></script>
+  <script src="game/js/screen-loading.js"></script>
   <script src="game/js/detail-background.js"></script>
   <script src="game/js/detail-foreground.js"></script>
-  <script src="game/js/screen-menu-elements.js"></script>
-  <script src="game/js/screen-menu.js"></script>
+  <script src="game/js/animation-tomenu.js"></script>
+  <script src="game/js/animation-toplay.js"></script>
+  <script src="game/js/animation-restart.js"></script>
+  <script src="game/js/animation-intro.js"></script>
+  <script src="game/js/animation-gameover.js"></script>
+  <script src="game/js/animation-functions.js"></script>
+  <script src="game/js/update-raf.js"></script>
+  <script src="game/js/update-game.js"></script>
+  <script src="game/js/update-character.js"></script>
+  <script src="game/js/sound-effects.js"></script>
+  <script src="game/js/clearVariables.js"></script>
+  <script src="game/js/game-overlay.js"></script>
+  <script src="game/js/moon-powerbar.js"></script>
+  <script src="game/js/collision.js"></script>
+  <script src="game/js/game-resize.js"></script>
+  <script src="game/js/shooting-star.js"></script>
 
   <script src="js/landing-scene.js"></script>
   <script src="js/mechanic-previews.js"></script>

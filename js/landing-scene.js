@@ -1,14 +1,36 @@
 // Landing-page atmospheric scene.
 //
-// Reuses the game engine's globals and draw functions (character, platform,
-// logo, background stars, clouds, campfire, floating rocks) but runs its own
-// minimal setup + RAF loop. None of the gameplay / UI / input code is wired
-// up, so there's no FPS readout, no dev-border, no play button.
+// Reuses the full game engine's globals and draw pipeline. On page load,
+// runs a gentle custom intro pan, then hands the RAF off to the engine's
+// runGame with gameState = 'gameMenu'. Clicking the character triggers the
+// real play-game transition (animateStart) with autoplay enabled, so the
+// engine's physics and AI fly the character around for a few seconds
+// before dying and auto-returning to the menu.
 
 (function () {
 
   var bannerEl = document.querySelector('.banner');
   var canvasEl = document.getElementById('js-starswinger');
+
+  // debug-panel.js (which we don't load) owns a batch of globals that other
+  // engine modules read every frame. Shim them with the same defaults the
+  // debug panel would have applied on first load.
+  if (typeof window.renderMode           === 'undefined') window.renderMode           = 'fullscreen';
+  if (typeof window.debugStarDecayRate   === 'undefined') window.debugStarDecayRate   = 0.005;
+  if (typeof window.debugStarDecayEnabled=== 'undefined') window.debugStarDecayEnabled= true;
+  if (typeof window.debugGravityEnabled  === 'undefined') window.debugGravityEnabled  = true;
+  if (typeof window.debugImmunityEnabled === 'undefined') window.debugImmunityEnabled = false;
+  if (typeof window.debugStarsCanDie     === 'undefined') window.debugStarsCanDie     = true;
+  if (typeof window.debugGrappleAssist   === 'undefined') window.debugGrappleAssist   = true; // autoplay needs this
+  if (typeof window.debugCharacterDebug  === 'undefined') window.debugCharacterDebug  = false;
+  if (typeof window.debugImmunityThreshold === 'undefined') window.debugImmunityThreshold = 200;
+
+  // game-controls.js (skipped — binds global keyboard) also owns these two.
+  // hookCreate / shooting-star push onto `elements`; chunk-manager and level
+  // setup call drawClicky() to rebuild a debug hit-area canvas. We don't use
+  // either on the landing page.
+  if (typeof window.elements   === 'undefined') window.elements   = [];
+  if (typeof window.drawClicky !== 'function')  window.drawClicky = function () {};
 
   // ── Camera sizing ─────────────────────────────────────────────────────────
   // DOM canvas, logical canvas, and camera are all the same size as the
@@ -34,11 +56,11 @@
     camera.offsetY = 0;
   }
 
-  // Logo tuning for the landing page (bigger and a touch higher than the
-  // in-game menu). Also overrides the game's createLogo so the SVG src
-  // resolves from the repo root.
-  var LOGO_SCALE     = 1.0;
-  var LOGO_Y_OFFSET  = -160; // -120 in the main game menu
+  // ── Logo tuning ──────────────────────────────────────────────────────────
+  // Bigger and a touch higher than the in-game menu. Also overrides the
+  // engine's createLogo so the SVG src resolves from the repo root.
+  var LOGO_SCALE    = 1.0;
+  var LOGO_Y_OFFSET = -160; // -120 in the main game menu
 
   function createLandingLogo() {
     var width  = Math.round(372 * LOGO_SCALE);
@@ -60,38 +82,6 @@
     img.src = 'game/art/title-white.svg';
   }
 
-  // ── One-time scene construction ───────────────────────────────────────────
-  function setupScene() {
-    setupLandingCanvas();
-
-    setupCharacter();
-    setupBackground();
-    setupForeground();
-
-    // Offscreen menu canvas that screen-menu.js expects; created manually
-    // since we don't call createMenu() (it also builds the play button).
-    gameMenu.canvas = document.createElement('canvas');
-    gameMenu.canvas.width  = camera.width;
-    gameMenu.canvas.height = camera.height;
-    gameMenu.context = gameMenu.canvas.getContext('2d');
-
-    createLandingLogo();
-    createPlatform();
-
-    // Neutralize the play button — detail-foreground.js reads
-    // playButton.alpha for the cyan button glow through the clouds.
-    playButton.alpha = 0;
-    playButton.hover = false;
-    playButton.hoverT = 0;
-
-    // gameMenu state keeps the foreground cloud code on its "menu" path
-    // (glow masking is gated by playButton.alpha, which is 0, so no glow).
-    gameState = 'gameMenu';
-
-    character.centerX = camera.width  / 2;
-    character.centerY = camera.height / 2;
-  }
-
   var PLATFORM_Y_OFFSET = 200; // +120 in the main game menu; +80 lower here
 
   function repositionMenuElements() {
@@ -101,46 +91,239 @@
     platform.posY = (camera.height / 2) - (platform.height / 2) + PLATFORM_Y_OFFSET;
   }
 
-  // ── Intro animation ───────────────────────────────────────────────────────
-  // Mirrors the main game's menuStage 5 reveal: camera starts below the scene
-  // so all elements are off-screen, then eases to y=0 over ~4 seconds while
-  // the logo fades in. Background stars and clouds parallax through camera.y
-  // the same way they do in the game.
-  var intro = {
-    active: true,
-    progress: 0,
-    camYStart: 0,
-    offsetY: 0,     // intro's own contribution to camera.y (combined with scroll)
-    duration: 360 // frames at 60fps — ~6s, gentler than the in-game 4s reveal
-  };
+  // ── One-time scene construction ───────────────────────────────────────────
+  // Order mirrors starswinger-init.js so the engine globals all init cleanly.
+  // We intentionally skip: controls() (binds global keyboard), mouseTestSetup
+  // / setupMenuMouse (steals canvas clicks), createDebugPanel, createAutoplay
+  // Panel, createTabNavigation.
+  function setupScene() {
+    setupLandingCanvas();
+    setupGameCanvas();
+    setupCharacter();
+
+    // Swap in our SVG-correct createLogo before createMenu consumes it
+    // (saves a 404 on 'art/title-white.svg').
+    window.createLogo = createLandingLogo;
+
+    // Menu scene construction — runs createLogo, createPlatform, createPlayButton.
+    createMenu();
+
+    pauseSetup();
+    createIntro();
+    setupGameOver();
+    setupBackground();
+    setupForeground();
+
+    repositionMenuElements();
+
+    // Push the play button off-screen — the engine's gameMenu render draws
+    // it unconditionally. Keep alpha 0 so the cloud glow doesn't fade in.
+    playButton.posX = -99999;
+    playButton.posY = -99999;
+    playButton.alpha = 0;
+
+    // Idle state; runGame renders the menu scene from here.
+    gameState = 'gameMenu';
+    menuFirstLoad = false; // skip the engine's own menu-intro pan
+
+    character.centerX = platform.posX + platform.width / 2;
+    character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
+  }
+
+  // ── Engine patches ────────────────────────────────────────────────────────
+  // Silence engine UI that doesn't belong on a landing page.
+  function applyEnginePatches() {
+    // 1. FPS counter (game-ui.js draws "FPS: nn" at top-left every frame).
+    if (typeof fpsCounter === 'function') {
+      window.fpsCounter = function () {};
+    }
+
+    // 2. Unconditional 4px white dev-border strokeRect in update-raf.js. It's
+    //    the only strokeRect with lineWidth === 4, so filtering by that is safe.
+    var ctx = canvas.context;
+    var origStrokeRect = ctx.strokeRect;
+    ctx.strokeRect = function (x, y, w, h) {
+      if (this.lineWidth === 4) return;
+      return origStrokeRect.call(this, x, y, w, h);
+    };
+
+    // 3. drawBackgroundClouds computes a drift offset but doesn't use it —
+    //    the big cloud band stays static. Replace with a tiled rolling draw
+    //    that applies camera.y parallax like the engine does for the other
+    //    cloud layers. Two tile copies wrap seamlessly.
+    window.drawBackgroundClouds = function (context, isAnimating) {
+      var tile = backgroundClouds[0];
+      if (!tile) return;
+      var tileW = tile.canvas.width;
+
+      bgCloudOffset -= 0.15 * dt;
+      while (bgCloudOffset <= -tileW) bgCloudOffset += tileW;
+
+      var y = (camera.height - 160) + camera.y * parallax.cloud1;
+      context.drawImage(tile.canvas, bgCloudOffset,         y);
+      context.drawImage(tile.canvas, bgCloudOffset + tileW, y);
+    };
+
+    // 4. updateMenu bakes the menu scene onto an offscreen canvas with no
+    //    camera.y offset, so background clouds parallax on scroll but the
+    //    logo/platform/character don't. Replace with a version that honours
+    //    camera.y so all layers scroll together.
+    window.updateMenu = function () {
+      var context = gameMenu.context;
+      context.clearRect(0, 0, camera.width, camera.height);
+
+      context.save();
+      context.globalAlpha = logo.alpha;
+      context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * parallax.logo);
+      context.restore();
+
+      drawPlatformScene(context, camera.y);
+
+      var platScreenY = platform.posY + platform.hover + camera.y * parallax.platform;
+      character.centerX = platform.posX + platform.width / 2;
+      character.centerY = platScreenY + 26 - character.size / 2;
+      drawCharacter(context);
+    };
+
+    // 5. Lock the camera during our click-triggered gameplay. Normal game has
+    //    the camera following the hook / character; for the landing page we
+    //    want a fixed view of the platform while autoplay flies around in it.
+    var origUpdateCamera = window.updateCamera;
+    console.log('[landing] patching updateCamera. orig exists:', typeof origUpdateCamera);
+    window.updateCamera = function () {
+      if (cameraLocked) {
+        camera.x = 0;
+        camera.vx = 0;
+        camera.vy = 0;
+        camera.targetX = 0;
+        camera.targetY = 0;
+        camera.target = null;
+        // Still feed scroll parallax in so stars/clouds shift on page scroll.
+        camera.y = scrollOffsetY;
+        return;
+      }
+      origUpdateCamera();
+    };
+
+    // 6. Intercept the game-over trigger so we never show the death
+    //    animation or the game-over screen. Snap straight back to menu.
+    window.setupGameOverAnimation = function () {
+      resetToMenu();
+    };
+
+    // 7. Suppress in-game HUD bits that don't belong on a landing page.
+    window.drawNextStarIndicator = function () {};
+    window.drawPauseIcon         = function () {};
+    window.drawStarChargeBar     = function () {};
+    window.scoreCounter          = function () {};
+
+    // 7b. Sound effects — we don't call loadAudio(), so the audio objects are
+    //     undefined and playing them throws. Silence them all.
+    window.soundGrappelLaunch = function () {};
+    window.soundGrappelHit    = function () {};
+    window.soundFalling       = function () {};
+
+    // 7c. Shift every star 120px lower on the canvas. Stars are positioned
+    //     through gridPosAt by both chunkManager.generateChunk and the
+    //     overlap check, so patching this helper keeps the layout consistent.
+    window.gridPosAt = function (col, row) {
+      return {
+        positionX: gridBaseX + col * gridSize.square,
+        positionY: row * gridSize.square + 120
+      };
+    };
+
+    // 8. Normally drawExitingPlatform only draws while the platform is sliding
+    //    off-screen and stops once it's gone. On the landing page we want it
+    //    permanently visible, and we also want the logo to stay behind it —
+    //    neither of which the engine does during 'starting' or 'playGame'.
+    //    Redraw both every frame. No collision surface (autoplay attaches to
+    //    a hook before landing anyway).
+    function drawLandingPlatform(context) {
+      if (platform.hoverDirection === 'up'   && platform.hover <= 0) platform.hoverDirection = 'down';
+      if (platform.hoverDirection === 'down' && platform.hover >= 5) platform.hoverDirection = 'up';
+      if (platform.hoverDirection === 'up') platform.hover -= 0.024 * dt;
+      else                                   platform.hover += 0.024 * dt;
+      platform.time += 0.016 * dt;
+
+      // Logo sits behind the platform (matches menu layering).
+      context.save();
+      context.globalAlpha = logo.alpha;
+      context.drawImage(logo.canvas, logo.posX, logo.posY + camera.y * parallax.logo);
+      context.restore();
+
+      var platY = platform.posY + platform.hover;
+      context.drawImage(platform.canvas, platform.posX, platY);
+      var fireCx = platform.posX + platform.width * 0.3;
+      drawCampfireFlames(context, fireCx, platY + 32, platform.time, 1.6);
+      drawFloatingRocks(context, platY, 0, platform.posX);
+    }
+
+    window.drawExitingPlatform = drawLandingPlatform;
+    // drawStartPlatform (called during 'starting' state) takes no args, so
+    // route it through the same renderer on canvas.context.
+    window.drawStartPlatform = function () {
+      drawLandingPlatform(canvas.context);
+    };
+  }
+
+  // Camera-lock flag flipped while the click-autoplay is running.
+  var cameraLocked = false;
+  var bgCloudOffset = 0;
 
   // ── Scroll-driven parallax ───────────────────────────────────────────────
-  // As the page scrolls, feed the banner's scroll position into camera.y so
-  // every parallax layer (stars, clouds, galaxy, logo, platform) shifts at
-  // its own depth — same system the game's intro pan uses.
+  // Feeds camera.y so every parallax layer (stars, galaxy, clouds, logo,
+  // platform) shifts at its own depth as the page scrolls. Only active in
+  // the menu state — during gameplay the engine owns camera.y.
   var scrollOffsetY = 0;
-  // How strongly scrolling drives camera.y. A subtle 0.1 keeps the effect
-  // present but unobtrusive — deep layers barely shift, foreground nudges.
   var SCROLL_PARALLAX_K = 0.1;
 
   function updateScrollOffset() {
     var bannerH = bannerEl.offsetHeight || 1;
-    // Clamp to the banner's height — once it's scrolled past, no point
-    // pushing the offset further.
     var sy = Math.max(0, Math.min(window.scrollY || window.pageYOffset || 0, bannerH));
     scrollOffsetY = -sy * SCROLL_PARALLAX_K;
   }
-
   window.addEventListener('scroll', updateScrollOffset, { passive: true });
 
-  // Fraction of the full off-screen distance to actually pan. 1.0 mirrors the
-  // in-game intro (elements start fully below); 0.5 halves the travel so the
-  // reveal is more subtle.
+  // ── Custom intro pan ──────────────────────────────────────────────────────
+  // 6-second eased reveal with half the travel of the engine's built-in
+  // menuStage 5 intro. Runs before we hand off to runGame.
+  var intro = {
+    active: true,
+    progress: 0,
+    camYStart: 0,
+    offsetY: 0,
+    duration: 360
+  };
   var INTRO_DISTANCE = 0.5;
 
+  // Persisted preference — unchecked means "skip the intro on reload".
+  var INTRO_PREF_KEY = 'aibek_landing_intro';
+  var introEnabled   = localStorage.getItem(INTRO_PREF_KEY) !== 'false';
+
+  (function wireIntroToggle() {
+    var el = document.getElementById('intro-toggle-input');
+    if (!el) return;
+    el.checked = introEnabled;
+    el.addEventListener('change', function () {
+      introEnabled = !!this.checked;
+      try { localStorage.setItem(INTRO_PREF_KEY, introEnabled ? 'true' : 'false'); }
+      catch (e) { /* storage may be disabled — preference stays session-local */ }
+    });
+  })();
+
   function startIntro() {
-    // Full distance = enough for the shallowest-parallax element (logo at
-    // parallax 0.3) to be off-screen below. Scaled by INTRO_DISTANCE.
+    if (!introEnabled) {
+      // Skip — land directly on the settled menu scene.
+      intro.active   = false;
+      intro.progress = 1;
+      intro.offsetY  = 0;
+      camera.y  = scrollOffsetY;
+      camera.vy = 0;
+      camera.scrollY = 0;
+      logo.alpha = 1;
+      return;
+    }
     var full = Math.ceil((camera.height - logo.posY + 100) / parallax.logo);
     intro.camYStart = Math.ceil(full * INTRO_DISTANCE);
     intro.offsetY = intro.camYStart;
@@ -158,7 +341,6 @@
     intro.progress += (1 / intro.duration) * dt;
     if (intro.progress > 1) intro.progress = 1;
 
-    // easeInOutCubic — gentle start, smooth middle, soft landing
     var t = intro.progress;
     var ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -172,8 +354,9 @@
     }
   }
 
-  // Combine the intro offset with the scroll-driven offset and update the
-  // camera's scroll accumulators (used by background/galaxy/twinkle layers).
+  // Combine the intro's camera offset with the scroll offset and propagate to
+  // camera.vy / camera.scrollY so parallax layers that read those fields stay
+  // in sync with the effective camera.y.
   function applyCameraParallax() {
     var prevY = camera.y;
     camera.y  = intro.offsetY + scrollOffsetY;
@@ -181,329 +364,16 @@
     camera.scrollY += camera.vy;
   }
 
-  // ── Click-triggered mini autoplay ─────────────────────────────────────────
-  // Clicking the character spawns a short, scripted "autoplay" flight: the
-  // character launches off the platform, grapples to a couple of stars, goes
-  // off-screen, then re-enters by either falling onto the platform or swinging
-  // back from the opposite side.
-  //
-  // This is *not* the engine's autoplay — it's self-contained physics tuned
-  // for the landing page. Swings are a pendulum (dθ/dt² = g·cos(θ)/L with
-  // light damping); flights are simple projectile motion.
-  var autoplay = {
-    active: false,
-    phase: 'idle',   // 'fly' | 'swing' | 'offscreen' | 'return-fall' | 'landing'
-    dir: 1,
-    returnType: 'fall',
-    stars: [],
-    currentStar: 0,
-    pivot: null,
-    ropeLength: 0,
-    angle: 0,
-    angVel: 0,
-    vx: 0,
-    vy: 0,
-    swingTime: 0,
-    offscreenTimer: 0,
-    landingTimer: 0,
-    safety: 0
-  };
-
-  var AP_GRAVITY       = 0.45;
-  var AP_CATCH_RADIUS  = 120;
-  var AP_SWING_DURATION = 38;   // frames on each rope before release
-  var AP_OFFSCREEN_HOLD = 48;   // frames the character stays off-screen
-  var AP_MAX_RUNTIME    = 720;  // hard cap (12s) in case tuning goes wrong
-  var AP_PAD            = 120;  // off-screen margin
-
-  function hitTestCharacter(cx, cy) {
-    var r = character.size * 0.6; // forgiving hit area
-    var dx = cx - character.centerX;
-    var dy = cy - character.centerY;
-    return (dx * dx + dy * dy) <= r * r;
-  }
-
-  function pageToCameraCoords(clientX, clientY) {
-    var rect = canvasEl.getBoundingClientRect();
-    return {
-      x: (clientX - rect.left) * (camera.width  / rect.width),
-      y: (clientY - rect.top)  * (camera.height / rect.height)
-    };
-  }
-
-  canvasEl.addEventListener('click', function (ev) {
-    if (autoplay.active || intro.active) return;
-    var p = pageToCameraCoords(ev.clientX, ev.clientY);
-    if (hitTestCharacter(p.x, p.y)) triggerAutoplay();
-  });
-
-  function triggerAutoplay() {
-    autoplay.active      = true;
-    autoplay.dir         = Math.random() < 0.5 ? 1 : -1;
-    autoplay.returnType  = Math.random() < 0.5 ? 'fall' : 'swing';
-    autoplay.currentStar = 0;
-    autoplay.safety      = 0;
-
-    var platMidX = platform.posX + platform.width / 2;
-    var landY    = platform.posY + platform.hover + 26 - character.size / 2;
-    var d        = autoplay.dir;
-
-    // Three stars that carry the character up-and-outward off-screen.
-    autoplay.stars = [
-      { x: platMidX + d * 260, y: landY - 140, alpha: 0, consumed: false, ring: 'red'  },
-      { x: platMidX + d * 520, y: landY - 260, alpha: 0, consumed: false, ring: 'red'  },
-      { x: platMidX + d * 820, y: landY - 140, alpha: 0, consumed: false, ring: 'cyan' }
-    ];
-
-    // Initial launch: up-and-forward ballistic that reaches the first hook.
-    autoplay.vx    = 6 * d;
-    autoplay.vy    = -12;
-    autoplay.phase = 'fly';
-  }
-
-  function fadeStars() {
-    for (var i = 0; i < autoplay.stars.length; i++) {
-      var s = autoplay.stars[i];
-      if (!s.consumed && s.alpha < 1) s.alpha = Math.min(1, s.alpha + 0.05 * dt);
-      if ( s.consumed && s.alpha > 0) s.alpha = Math.max(0, s.alpha - 0.06 * dt);
-    }
-  }
-
-  function offScreenCheck() {
-    return character.centerX < -AP_PAD ||
-           character.centerX >  camera.width  + AP_PAD ||
-           character.centerY >  camera.height + AP_PAD ||
-           character.centerY < -AP_PAD * 2;
-  }
-
-  function tryCatchNextHook() {
-    if (autoplay.currentStar >= autoplay.stars.length) return false;
-    var star = autoplay.stars[autoplay.currentStar];
-    if (star.consumed) return false;
-    var dx = star.x - character.centerX;
-    var dy = star.y - character.centerY;
-    var d  = Math.sqrt(dx * dx + dy * dy);
-    if (d > AP_CATCH_RADIUS || d < 8) return false;
-
-    autoplay.pivot      = star;
-    autoplay.ropeLength = d;
-    // Angle from pivot to character (with y growing downward)
-    autoplay.angle  = Math.atan2(-dy, -dx);
-    // Project linear velocity onto tangent to get starting angular velocity
-    var tx = -Math.sin(autoplay.angle);
-    var ty =  Math.cos(autoplay.angle);
-    var tangentSpeed = autoplay.vx * tx + autoplay.vy * ty;
-    autoplay.angVel    = tangentSpeed / d;
-    autoplay.swingTime = 0;
-    autoplay.phase     = 'swing';
-    return true;
-  }
-
-  function releaseFromHook() {
-    var tx = -Math.sin(autoplay.angle);
-    var ty =  Math.cos(autoplay.angle);
-    var speed = autoplay.angVel * autoplay.ropeLength;
-    autoplay.vx = tx * speed;
-    autoplay.vy = ty * speed;
-    autoplay.stars[autoplay.currentStar].consumed = true;
-    autoplay.currentStar++;
-    autoplay.phase = 'fly';
-  }
-
-  function startReturnFall() {
-    autoplay.stars = [];
-    character.centerX = platform.posX + platform.width / 2;
-    character.centerY = -80;
-    autoplay.vx = 0;
-    autoplay.vy = 2;
-    autoplay.phase = 'return-fall';
-  }
-
-  function startReturnSwing() {
-    var oppDir   = -autoplay.dir;
-    var platMidX = platform.posX + platform.width / 2;
-    var landY    = platform.posY + platform.hover + 26 - character.size / 2;
-
-    // Single cyan hook high on the opposite side — character swings through
-    // the bottom of the arc and lands back on the platform.
-    var hook = { x: platMidX + oppDir * 320, y: landY - 300,
-                 alpha: 0, consumed: false, ring: 'cyan' };
-    autoplay.stars       = [hook];
-    autoplay.currentStar = 0;
-
-    // Spawn off-screen on the opposite side, heading inward and slightly up.
-    character.centerX = platMidX + oppDir * (camera.width * 0.55 + AP_PAD);
-    character.centerY = landY - 140;
-    autoplay.vx = -oppDir * 9;
-    autoplay.vy = -3;
-    autoplay.phase = 'fly';
-  }
-
-  function tryLandOnPlatform() {
-    var landY = platform.posY + platform.hover + 26 - character.size / 2;
-    if (character.centerY < landY - 2) return false;
-    // Generous x-window so we're not too strict about sticking the landing.
-    var slack = 40;
-    if (character.centerX < platform.posX - slack) return false;
-    if (character.centerX > platform.posX + platform.width + slack) return false;
-
-    character.centerX = platform.posX + platform.width / 2;
-    character.centerY = landY;
-    autoplay.phase = 'landing';
-    autoplay.landingTimer = 0;
-    return true;
-  }
-
-  function endAutoplay() {
-    autoplay.active = false;
-    autoplay.phase = 'idle';
-    autoplay.stars = [];
-    autoplay.pivot = null;
-  }
-
-  function tickAutoplay() {
-    if (!autoplay.active) return;
-    autoplay.safety += dt;
-    if (autoplay.safety > AP_MAX_RUNTIME) { endAutoplay(); return; }
-
-    fadeStars();
-
-    switch (autoplay.phase) {
-
-      case 'fly':
-        autoplay.vy += AP_GRAVITY * dt;
-        character.centerX += autoplay.vx * dt;
-        character.centerY += autoplay.vy * dt;
-
-        if (tryCatchNextHook()) break;
-
-        if (autoplay.currentStar >= autoplay.stars.length && tryLandOnPlatform()) break;
-
-        if (offScreenCheck()) {
-          if (autoplay.currentStar >= autoplay.stars.length) {
-            // Finished departure — hand off to the return sequence.
-            autoplay.phase = 'offscreen';
-            autoplay.offscreenTimer = 0;
-          } else {
-            // Missed a hook and left the scene — fall through to return too.
-            autoplay.phase = 'offscreen';
-            autoplay.offscreenTimer = 0;
-          }
-        }
-        break;
-
-      case 'swing':
-        // Pendulum: angle measured from +x, y grows down.
-        // d(angVel)/dt = (g / L) * cos(angle). Light damping keeps swings tame.
-        autoplay.angVel += (AP_GRAVITY / autoplay.ropeLength) * Math.cos(autoplay.angle) * dt;
-        autoplay.angVel *= Math.pow(0.998, dt);
-        autoplay.angle  += autoplay.angVel * dt;
-
-        character.centerX = autoplay.pivot.x + Math.cos(autoplay.angle) * autoplay.ropeLength;
-        character.centerY = autoplay.pivot.y + Math.sin(autoplay.angle) * autoplay.ropeLength;
-
-        autoplay.swingTime += dt;
-        if (autoplay.swingTime >= AP_SWING_DURATION) releaseFromHook();
-        break;
-
-      case 'offscreen':
-        autoplay.offscreenTimer += dt;
-        if (autoplay.offscreenTimer > AP_OFFSCREEN_HOLD) {
-          if (autoplay.returnType === 'fall') startReturnFall();
-          else                                 startReturnSwing();
-        }
-        break;
-
-      case 'return-fall':
-        autoplay.vy += AP_GRAVITY * dt;
-        character.centerX += autoplay.vx * dt;
-        character.centerY += autoplay.vy * dt;
-        tryLandOnPlatform();
-        break;
-
-      case 'landing':
-        autoplay.landingTimer += dt;
-        if (autoplay.landingTimer > 18) endAutoplay();
-        break;
-    }
-  }
-
-  function drawAutoplay(ctx) {
-    if (!autoplay.active && autoplay.stars.length === 0) return;
-
-    // Rope from pivot to character when swinging — drawn behind stars & char.
-    if (autoplay.phase === 'swing' && autoplay.pivot) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(autoplay.pivot.x, autoplay.pivot.y);
-      ctx.lineTo(character.centerX, character.centerY);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Stars: white center + coloured ring matching the game's hook types.
-    for (var i = 0; i < autoplay.stars.length; i++) {
-      var s = autoplay.stars[i];
-      if (s.alpha <= 0.005) continue;
-      ctx.save();
-      ctx.globalAlpha = s.alpha;
-      ctx.strokeStyle = (s.ring === 'cyan') ? '#40e0ff' : '#ff4040';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, 14, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  // ── Animated background cloud band ────────────────────────────────────────
-  // The engine's drawBackgroundClouds computes a drift offset but then draws
-  // the cloud at x=0, so this layer stays static. Reimplement with a rolling
-  // offset and two tiled draws for seamless wrap. Also applies camera.y
-  // parallax so the band rides with the intro pan.
-  var bgCloudOffset = 0;
-  function drawAnimatedBgClouds(context) {
-    var tile = backgroundClouds[0];
-    if (!tile) return;
-    var tileW = tile.canvas.width;
-
-    bgCloudOffset -= 0.15 * dt;
-    while (bgCloudOffset <= -tileW) bgCloudOffset += tileW;
-
-    var y = (camera.height - 160) + camera.y * parallax.cloud1;
-    context.drawImage(tile.canvas, bgCloudOffset,         y);
-    context.drawImage(tile.canvas, bgCloudOffset + tileW, y);
-  }
-
-  // ── Render loop ───────────────────────────────────────────────────────────
-  function runLanding(timestamp) {
-    requestAnimationFrame(runLanding);
-
-    if (lastFrameTime === 0) lastFrameTime = timestamp;
-    var elapsed = timestamp - lastFrameTime;
-    lastFrameTime = timestamp;
-    dt = (elapsed > 0 && elapsed < 200) ? elapsed / targetFrameMs : 1;
-
-    tickIntro();
-    tickAutoplay();
-    applyCameraParallax();
-
+  // ── Intro render (used only while our custom intro is active) ────────────
+  // Mirrors the rendering of runGame's 'gameMenu' case but gives us full
+  // control of logo.alpha and the camera.y parallax offsets.
+  function drawIntroFrame() {
     clear(canvas);
-
     canvas.context.save();
     canvas.context.scale(renderScale, renderScale);
 
-    // Deep-space gradient + parallax star layers across the full canvas.
     drawBackground();
 
-    // Clip everything below to the camera region (matches how the game
-    // composites the menu scene).
     var cox = camera.offsetX;
     var coy = camera.offsetY;
     canvas.context.save();
@@ -512,9 +382,6 @@
     canvas.context.rect(0, 0, camera.width, camera.height);
     canvas.context.clip();
 
-    // Menu scene composited offscreen first, then layered between the
-    // background and foreground clouds. Each layer applies its own parallax
-    // to camera.y so the intro pan reveals them at different speeds.
     var gctx = gameMenu.context;
     gctx.clearRect(0, 0, camera.width, camera.height);
 
@@ -525,18 +392,12 @@
 
     drawPlatformScene(gctx, camera.y);
 
-    // When autoplay is running it owns the character position. Otherwise
-    // park the character on the platform (tracking hover + camera parallax).
-    if (!autoplay.active) {
-      var platScreenY = platform.posY + platform.hover + camera.y * parallax.platform;
-      character.centerX = platform.posX + platform.width / 2;
-      character.centerY = platScreenY + 26 - character.size / 2;
-    }
-
-    drawAutoplay(gctx);
+    var platScreenY = platform.posY + platform.hover + camera.y * parallax.platform;
+    character.centerX = platform.posX + platform.width / 2;
+    character.centerY = platScreenY + 26 - character.size / 2;
     drawCharacter(gctx);
 
-    drawAnimatedBgClouds(canvas.context);
+    drawBackgroundClouds(canvas.context, true);
     canvas.context.drawImage(gameMenu.canvas, 0, 0);
     drawForeground(canvas.context, true);
 
@@ -544,15 +405,245 @@
     canvas.context.restore(); // renderScale
   }
 
+  // ── Click-to-play ─────────────────────────────────────────────────────────
+  // Clicking the character while the menu is idle triggers the engine's
+  // animateStart (the real menu→play transition) with autoplay enabled. The
+  // engine's AI then grapples through a real level until the character dies,
+  // at which point our game-over watchdog transitions back to the menu.
+  function pageToCameraCoords(clientX, clientY) {
+    var rect = canvasEl.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (camera.width  / rect.width),
+      y: (clientY - rect.top)  * (camera.height / rect.height)
+    };
+  }
+
+  function hitTestCharacter(cx, cy) {
+    var r = character.size * 0.6;
+    var dx = cx - character.centerX;
+    var dy = cy - character.centerY;
+    return (dx * dx + dy * dy) <= r * r;
+  }
+
+  console.log('[landing] registering click handler, canvas=', canvasEl);
+  canvasEl.addEventListener('click', function (ev) {
+    var p = pageToCameraCoords(ev.clientX, ev.clientY);
+    var hit = hitTestCharacter(p.x, p.y);
+    console.log('[landing] click cam=(' + Math.round(p.x) + ',' + Math.round(p.y) +
+      ') char=(' + Math.round(character.centerX) + ',' + Math.round(character.centerY) +
+      ') hit=' + hit + ' intro=' + intro.active + ' state=' + gameState);
+
+    // If the intro is still running, a click anywhere in the banner skips it
+    // — lets the user get to the interactive scene immediately.
+    if (intro.active) {
+      intro.progress = 1;
+      intro.offsetY  = 0;
+      intro.active   = false;
+      logo.alpha     = 1;
+      return;
+    }
+
+    if (gameState !== 'gameMenu') return;
+    if (!hit) return;
+    try {
+      startClickAutoplay();
+      console.log('[landing] startClickAutoplay ok, state=' + gameState);
+    } catch (e) {
+      console.error('[landing] startClickAutoplay threw:', e);
+    }
+  });
+
+  // Mirrors the engine's animateStart (the real menu→play transition) but
+  // locks the camera and skips state 1's pan so the scene stays centred on
+  // the platform. State 2 (walk to platform edge) + state 3 (hop + attach
+  // to first hook) run normally, so the character does the same walk/jump
+  // you see at the start of a regular game.
+  function startClickAutoplay() {
+    camera.x  = 0;
+    camera.vx = 0;
+    camera.y  = scrollOffsetY;
+    camera.vy = 0;
+
+    var firstStarTarget = platform.posX + platform.width + 480;
+    gameSetup(firstStarTarget);
+
+    gameState = 'starting';
+    hookAlpha = 1;
+
+    var hoverY = platform.posY + platform.hover;
+    character.centerX = platform.posX + platform.width / 2;
+    character.centerY = hoverY + 26 - character.size / 2;
+
+    // start-state bookkeeping (same fields animateStart writes)
+    start.logoStartX     = (camera.width / 2) - (logo.width / 2);
+    start.platformStartX = platform.posX;
+    start.cameraStartX   = 0;
+    start.targetCameraX  = 0; // camera locked — no pan to perform
+    start.state          = 2; // skip state 1 (pan + logo fade); go straight to walk
+    start.progress       = 0;
+    start.logoAlpha      = 1;
+    start.hopVY          = 0;
+    start.hopping        = false;
+
+    cameraLocked = true;
+    console.log('[landing] startClickAutoplay: cameraLocked=true, camera.width=', camera.width,
+      'logo.posX=', logo.posX, 'platform.posX=', platform.posX);
+
+    // Stars invisible during walk, fade in starting at the jump.
+    hookAlpha = 0;
+
+    autoplay.enabled     = true;
+    autoplay.waiting     = false;
+    autoplay.detachAngle = null;
+    autoplay.hasDetached = false;
+
+    playDurationTimer = 0;
+    offscreenTimer    = 0;
+  }
+
+  // Snap directly back to the menu — no animateGameOver, no menuAnimation,
+  // no UI screens. Character lands back on the platform.
+  function resetToMenu() {
+    autoplay.enabled = false;
+    autoplay.waiting = false;
+    if (character.swinging) detach();
+
+    clearVariables();
+
+    // Reset fade-related state so the next click starts cleanly.
+    hookAlpha = 1;
+    if (gamePanel && gamePanel.context) gamePanel.context.globalAlpha = 1;
+
+    cameraLocked = false;
+    camera.x  = 0;
+    camera.vx = 0;
+    camera.y  = scrollOffsetY;
+    camera.vy = 0;
+
+    character.centerX = platform.posX + platform.width / 2;
+    character.centerY = platform.posY + platform.hover + 26 - character.size / 2;
+
+    gameState = 'gameMenu';
+    playDurationTimer = 0;
+    offscreenTimer    = 0;
+  }
+
+  // ── Watchdog ──────────────────────────────────────────────────────────────
+  // Returns to the menu when autoplay leaves the screen or runs long.
+  var playDurationTimer = 0;
+  var offscreenTimer    = 0;
+  var MAX_PLAY_SECONDS  = 14;
+  var OFFSCREEN_HOLD    = 48; // ~0.8s off-screen before reset
+
+  function tickGameOverWatchdog() {
+    if (gameState !== 'playGame') {
+      playDurationTimer = 0;
+      offscreenTimer    = 0;
+      return;
+    }
+
+    playDurationTimer += dt;
+
+    var outsideX = character.centerX < -80 || character.centerX > camera.width + 80;
+    var outsideY = character.centerY < -120 || character.centerY > camera.height + 80;
+    if (outsideX || outsideY) {
+      offscreenTimer += dt;
+      if (offscreenTimer > OFFSCREEN_HOLD) {
+        resetToMenu();
+        return;
+      }
+    } else {
+      offscreenTimer = 0;
+    }
+
+    if (playDurationTimer > 60 * MAX_PLAY_SECONDS) {
+      resetToMenu();
+    }
+  }
+
+  // ── Runtime patching: wrap runGame for per-frame hooks ───────────────────
+  // Applies scroll parallax while on the menu, and runs the game-over
+  // watchdog. runGame schedules its own RAF, so we just replace the global.
+  function wrapRunGame() {
+    var origRunGame = runGame;
+    var dbgFrame = 0;
+    var HOOK_FADE_RATE = 0.05; // 1/20 frames ≈ 0.33s
+    window.runGame = function (timestamp) {
+      if (gameState === 'gameMenu') {
+        // Rebase camera.y onto scroll (intro has already ended).
+        intro.offsetY = 0;
+        applyCameraParallax();
+      }
+      // Feed hookAlpha into gamePanel so it fades during 'playGame'. The
+      // engine already applies hookAlpha on canvas.context during 'starting',
+      // so we leave gamePanel's alpha at 1 in that state.
+      if (gamePanel && gamePanel.context) {
+        gamePanel.context.globalAlpha = (gameState === 'playGame') ? hookAlpha : 1;
+      }
+      origRunGame(timestamp);
+      // dt is fresh now (origRunGame calculated it); watchdog can use it.
+      tickGameOverWatchdog();
+
+      // Fade in the stars once the character jumps (starting state 3), and
+      // keep filling in during the first frames of real gameplay.
+      var jumping = (gameState === 'starting' && typeof start !== 'undefined' && start.state === 3);
+      if ((jumping || gameState === 'playGame') && hookAlpha < 1) {
+        hookAlpha = Math.min(1, hookAlpha + HOOK_FADE_RATE * dt);
+      }
+      // One-shot log each time we change gameState, plus every ~60 frames
+      // while in playGame so we can see camera drift if any.
+      if (gameState === 'playGame' && ((dbgFrame++) % 60 === 0)) {
+        console.log('[landing] playGame frame', dbgFrame,
+          'camera.x=', Math.round(camera.x),
+          'camera.y=', Math.round(camera.y),
+          'camera.width=', camera.width,
+          'logo.posX=', logo.posX,
+          'char=(' + Math.round(character.centerX) + ',' + Math.round(character.centerY) + ')');
+      }
+    };
+  }
+
+  // ── Intro RAF (used only until the intro finishes) ───────────────────────
+  // Once intro.active flips to false, we hand off the RAF to the engine by
+  // calling runGame once — it re-schedules itself from there.
+  function runIntroLoop(timestamp) {
+    if (lastFrameTime === 0) lastFrameTime = timestamp;
+    var elapsed = timestamp - lastFrameTime;
+    lastFrameTime = timestamp;
+    dt = (elapsed > 0 && elapsed < 200) ? elapsed / targetFrameMs : 1;
+
+    tickIntro();
+    applyCameraParallax();
+    drawIntroFrame();
+
+    if (intro.active) {
+      requestAnimationFrame(runIntroLoop);
+    } else {
+      // Reset camera.vy so the engine doesn't inherit our accumulated drift.
+      camera.vy = 0;
+      wrapRunGame();
+      requestAnimationFrame(runGame);
+    }
+  }
+
   // ── Resize ────────────────────────────────────────────────────────────────
-  // Banner aspect changes when the window width changes. Rebuild star / cloud
-  // tiles so they keep covering the new camera dims.
+  // Banner aspect changes with window width. Rebuild tile canvases so stars
+  // and clouds keep covering the new camera dims. Only safe while on the
+  // menu — gameplay state has live physics and chunk data.
+  //
+  // setupForeground() pushes onto backgroundClouds/smallClouds/tinyClouds
+  // without clearing them first, so each resize would otherwise stack more
+  // cloud instances on top of the old ones. Reset them here before rebuild.
   var resizeTimer;
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
+      if (gameState !== 'gameMenu') return;
       setupLandingCanvas();
       setupBackground();
+      backgroundClouds.length = 0;
+      smallClouds.length = 0;
+      tinyClouds.length = 0;
       setupForeground();
       repositionMenuElements();
     }, 120);
@@ -560,13 +651,22 @@
 
   // ── Go ────────────────────────────────────────────────────────────────────
   setupScene();
-  // Give createLogo a frame to load its SVG image (it draws asynchronously),
-  // then position elements, prime the intro, and kick off the loop.
+  applyEnginePatches();
+
+  // Give createLogo a frame to load its SVG (async image), then prime state
+  // and kick off the appropriate loop. If the user disabled the intro we
+  // skip straight to runGame; otherwise the intro loop animates the pan and
+  // hands off when it finishes.
   requestAnimationFrame(function () {
     repositionMenuElements();
-    updateScrollOffset(); // honor initial scroll position on page reload
+    updateScrollOffset();
     startIntro();
-    requestAnimationFrame(runLanding);
+    if (intro.active) {
+      requestAnimationFrame(runIntroLoop);
+    } else {
+      wrapRunGame();
+      requestAnimationFrame(runGame);
+    }
   });
 
 })();
