@@ -14,6 +14,7 @@
   var COLOR_STANDARD = '#40e070';
   var COLOR_IMMUNE   = '#40e0ff';
   var COLOR_SHOOTING = '#ffc840';
+  var COLOR_DRAW     = '#e070ff';
   var COLOR_DEATH    = '#ff3838';
 
   function hexToRgb(hex) {
@@ -25,6 +26,7 @@
   var RGB_STANDARD = hexToRgb(COLOR_STANDARD);
   var RGB_IMMUNE   = hexToRgb(COLOR_IMMUNE);
   var RGB_SHOOTING = hexToRgb(COLOR_SHOOTING);
+  var RGB_DRAW     = hexToRgb(COLOR_DRAW);
   var RGB_DEATH    = hexToRgb(COLOR_DEATH);
 
   function Preview(el) {
@@ -94,6 +96,16 @@
         trail: [],
         restT: 0,
         phase: 'running'
+      };
+    } else if (this.kind === 'draw') {
+      this.state = {
+        phase: 'drawing',
+        progress: 0,
+        power: 1,
+        sparks: [],
+        runBob: 0,
+        restT: 0,
+        fadeAlpha: 1
       };
     }
   };
@@ -482,12 +494,210 @@
     ctx.restore();
   };
 
+  // ─── Draw (spend power to ink a platform) ───────────────────────────────
+  Preview.prototype.tickDraw = function (dt) {
+    var s = this.state;
+    var ctx = this.ctx;
+
+    var startX = this.w * 0.14;
+    var endX   = this.w * 0.86;
+    var platformY = this.h * 0.66;
+    var spanX = endX - startX;
+
+    // Phase machine: drawing → finished (run-out) → fade → reset
+    if (s.phase === 'drawing') {
+      s.progress += 0.00045 * dt;
+      s.power = Math.max(0, 1 - s.progress);
+      if (s.progress >= 1) {
+        s.progress = 1;
+        s.phase = 'finished';
+        s.restT = 0;
+      }
+    } else if (s.phase === 'finished') {
+      s.restT += dt;
+      if (s.restT > 650) {
+        s.phase = 'fading';
+        s.restT = 0;
+      }
+    } else if (s.phase === 'fading') {
+      s.restT += dt;
+      s.fadeAlpha = Math.max(0, 1 - s.restT / 450);
+      if (s.fadeAlpha <= 0) {
+        s.phase = 'rest';
+        s.restT = 0;
+      }
+    } else if (s.phase === 'rest') {
+      s.restT += dt;
+      if (s.restT > 400) {
+        s.progress = 0;
+        s.power = 1;
+        s.fadeAlpha = 1;
+        s.sparks = [];
+        s.phase = 'drawing';
+      }
+    }
+
+    s.runBob += 0.015 * dt;
+
+    var drawEndX = startX + spanX * s.progress;
+
+    // Spawn ink sparks at the drawing tip while drawing
+    if (s.phase === 'drawing') {
+      if (Math.random() < 0.45) {
+        s.sparks.push({
+          x: drawEndX,
+          y: platformY + (Math.random() * 4 - 2),
+          vx: (Math.random() - 0.3) * 0.04,
+          vy: (Math.random() - 0.5) * 0.08,
+          life: 400 + Math.random() * 200,
+          max: 500
+        });
+      }
+    }
+    // Age / cull sparks
+    for (var k = s.sparks.length - 1; k >= 0; k--) {
+      var sp = s.sparks[k];
+      sp.x += sp.vx * dt;
+      sp.y += sp.vy * dt;
+      sp.vy += 0.0002 * dt;
+      sp.life -= dt;
+      if (sp.life <= 0) s.sparks.splice(k, 1);
+    }
+
+    this.drawBg(dt);
+
+    // ── Power bar (top-right) ──
+    var barW = Math.min(120, this.w * 0.32);
+    var barH = 8;
+    var barX = this.w - barW - 18;
+    var barY = 18;
+    // Label
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.font = '600 9px -apple-system, Segoe UI, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('POWER', barX + barW, barY - 4);
+    // Track
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = 'rgba(' + RGB_DRAW + ', 0.35)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, barX, barY, barW, barH, 4);
+    ctx.fill();
+    ctx.stroke();
+    // Fill — color shifts to red as power drains
+    var drain = 1 - s.power;
+    var fillColor = drain < 0.55 ? COLOR_DRAW : COLOR_DEATH;
+    var fillRgb   = drain < 0.55 ? RGB_DRAW   : RGB_DEATH;
+    if (s.power > 0.001) {
+      roundRect(ctx, barX, barY, barW * s.power, barH, 4);
+      var grd = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+      grd.addColorStop(0, 'rgba(' + fillRgb + ', 0.5)');
+      grd.addColorStop(1, fillColor);
+      ctx.fillStyle = grd;
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // ── Platform line (drawn so far) ──
+    ctx.save();
+    ctx.globalAlpha = s.fadeAlpha;
+    // Soft glow underlay
+    ctx.strokeStyle = 'rgba(' + RGB_DRAW + ', 0.35)';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(startX, platformY);
+    ctx.lineTo(drawEndX, platformY);
+    ctx.stroke();
+    // Solid stroke
+    ctx.strokeStyle = COLOR_DRAW;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(startX, platformY);
+    ctx.lineTo(drawEndX, platformY);
+    ctx.stroke();
+    // Bright highlight on top
+    ctx.strokeStyle = 'rgba(255, 220, 255, 0.75)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startX, platformY - 1);
+    ctx.lineTo(drawEndX, platformY - 1);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Sparks at the tip ──
+    for (var i = 0; i < s.sparks.length; i++) {
+      var sp2 = s.sparks[i];
+      var pt = sp2.life / sp2.max;
+      ctx.fillStyle = 'rgba(' + RGB_DRAW + ', ' + (pt * 0.8) + ')';
+      ctx.beginPath();
+      ctx.arc(sp2.x, sp2.y, 1.6 * pt + 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── Aibek — runs along the drawn segment ──
+    // Runs from startX up to drawEndX; positions at 70% of the drawn length so
+    // the draw tip is ahead of him (ink goes in front of his feet).
+    var charX = startX + (drawEndX - startX) * 0.72;
+    if (s.phase !== 'drawing') {
+      // After draw completes, he runs the remaining distance to the end
+      var afterT = Math.min(1, s.restT / 650);
+      if (s.phase === 'finished') {
+        charX = startX + (endX - startX) * (0.72 + afterT * 0.28);
+      } else {
+        charX = endX;
+      }
+    }
+    var bob = Math.sin(s.runBob) * 1.8;
+    var charY = platformY - 10 + bob;
+    var charAlpha = s.phase === 'fading' ? s.fadeAlpha : (s.phase === 'rest' ? 0 : 1);
+    if (charAlpha > 0.01) {
+      this.drawCharacter(charX, charY, charAlpha);
+      // Tiny dust puff under his feet
+      if (s.phase === 'drawing' || s.phase === 'finished') {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.beginPath();
+        ctx.arc(charX - 3, platformY + 1, 2.5 + Math.sin(s.runBob * 2) * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ── Drawing tip indicator (small crosshair) ──
+    if (s.phase === 'drawing') {
+      ctx.save();
+      ctx.translate(drawEndX, platformY);
+      ctx.strokeStyle = 'rgba(' + RGB_DRAW + ', 0.9)';
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  };
+
   Preview.prototype.tick = function (dt) {
     this.ctx.clearRect(0, 0, this.w, this.h);
     if (this.kind === 'grapple')       this.tickGrapple(dt);
     else if (this.kind === 'immune')   this.tickImmune(dt);
     else if (this.kind === 'shooting') this.tickShooting(dt);
+    else if (this.kind === 'draw')     this.tickDraw(dt);
   };
+
+  function roundRect(ctx, x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y,     x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x,     y + h, r);
+    ctx.arcTo(x,     y + h, x,     y,     r);
+    ctx.arcTo(x,     y,     x + w, y,     r);
+    ctx.closePath();
+  }
 
   // ── Boot ──────────────────────────────────────────────────────────────
   var previews = [];

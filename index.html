@@ -40,7 +40,7 @@
       height: 100%;
       display: block;
       background: #000;
-      pointer-events: none;
+      cursor: pointer;
     }
     .banner__fade {
       position: absolute;
@@ -305,6 +305,7 @@
     .mechanic--grapple  .mechanic__tag-dot { background: #40e070; color: #40e070; }
     .mechanic--immune   .mechanic__tag-dot { background: #40e0ff; color: #40e0ff; }
     .mechanic--shooting .mechanic__tag-dot { background: #ffc840; color: #ffc840; }
+    .mechanic--draw     .mechanic__tag-dot { background: #e070ff; color: #e070ff; }
     .mechanic__eyebrow {
       display: inline-flex;
       align-items: center;
@@ -334,6 +335,7 @@
     .mechanic--grapple  .mechanic__title em { color: #40e070; }
     .mechanic--immune   .mechanic__title em { color: #40e0ff; }
     .mechanic--shooting .mechanic__title em { color: #ffc840; }
+    .mechanic--draw     .mechanic__title em { color: #e070ff; }
     .mechanic__body {
       margin: 0 0 14px;
       font-size: 15.5px;
@@ -551,6 +553,33 @@
               <div><strong>Depletes</strong>As it travels</div>
               <div><strong>Reward</strong>Huge lateral reach</div>
               <div><strong>Skill</strong>Read the path</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="mechanic mechanic--draw mechanic--reverse">
+          <div class="mechanic__preview">
+            <span class="mechanic__tag"><span class="mechanic__tag-dot"></span>Drawn platform</span>
+            <canvas class="mechanic__canvas" data-mechanic="draw" aria-hidden="true"></canvas>
+          </div>
+          <div class="mechanic__copy">
+            <div class="mechanic__eyebrow">04 · Draw the line</div>
+            <h2 class="mechanic__title">
+              Spend power. <em>Paint a path.</em>
+            </h2>
+            <p class="mechanic__body">
+              Bank enough star charge and you can spend it to ink a platform beneath Aibek — a
+              solid line he can sprint across when the sky runs out of anchors. Every pixel drawn
+              is power burned, so every stroke has to count.
+            </p>
+            <p class="mechanic__body">
+              Short bridges rescue a botched release. Long runways set up the next big swing.
+              Stop drawing when the bar gets thin, or the ink fades out from under him.
+            </p>
+            <div class="mechanic__meta">
+              <div><strong>Costs</strong>Star charge</div>
+              <div><strong>Use</strong>Bridge dead air</div>
+              <div><strong>Risk</strong>Empty bar, no floor</div>
             </div>
           </div>
         </article>
